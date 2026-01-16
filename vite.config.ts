@@ -1,0 +1,29 @@
+import { defineConfig } from 'vite';
+import { resolve } from 'path';
+import cssInjectedByJsPlugin from 'vite-plugin-css-injected-by-js';
+
+export default defineConfig({
+  plugins: [
+    cssInjectedByJsPlugin(),
+  ],
+  build: {
+    lib: {
+      entry: resolve(__dirname, 'src/index.ts'),
+      name: 'StandaloneAuraloader',
+      fileName: (format) => `standalone-auraloader.${format}.js`,
+      formats: ['es', 'umd'],
+    },
+    rollupOptions: {
+      output: {
+        globals: {},
+      },
+    },
+    sourcemap: true,
+    minify: 'esbuild',
+  },
+  resolve: {
+    alias: {
+      '@': resolve(__dirname, 'src'),
+    },
+  },
+});

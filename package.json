@@ -1,0 +1,51 @@
+{
+  "name": "@aurabx/standalone-uploader",
+  "version": "0.1.0",
+  "description": "Standalone DICOM uploader component for embedding in external applications",
+  "type": "module",
+  "main": "dist/standalone-auraloader.umd.js",
+  "module": "dist/standalone-auraloader.es.js",
+  "types": "dist/types/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/standalone-auraloader.es.js",
+      "require": "./dist/standalone-auraloader.umd.js",
+      "types": "./dist/types/index.d.ts"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "typecheck": "tsc --noEmit",
+    "preview": "vite preview"
+  },
+  "keywords": [
+    "dicom",
+    "uploader",
+    "medical-imaging",
+    "aurabox"
+  ],
+  "author": "Aurabx",
+  "license": "UNLICENSED",
+  "packageManager": "pnpm@10.23.0",
+  "devDependencies": {
+    "@types/node": "^25.0.9",
+    "rollup-plugin-dts": "^6.3.0",
+    "typescript": "^5.9.3",
+    "vite": "^7.3.1",
+    "vite-plugin-css-injected-by-js": "^3.5.2"
+  },
+  "dependencies": {
+    "@uppy/core": "^5.2.0",
+    "@uppy/drag-drop": "^5.1.0",
+    "@uppy/status-bar": "^5.1.0",
+    "@uppy/tus": "^5.1.0",
+    "@zip.js/zip.js": "^2.8.15",
+    "axios": "^1.13.2",
+    "dicom-parser": "^1.8.21",
+    "uuid": "^13.0.0"
+  }
+}

@@ -1,0 +1,225 @@
+/* Uppy Core Styles */
+.uppy-Root {
+  box-sizing: border-box;
+  font-family: -apple-system, blinkmacsystemfont, "Segoe UI", helvetica, arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+  line-height: 1;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-align: left;
+  position: relative;
+  color: #333;
+}
+.uppy-Root *,
+.uppy-Root *::before,
+.uppy-Root *::after {
+  box-sizing: inherit;
+}
+.uppy-Root [hidden] {
+  display: none;
+}
+
+/* Uppy DragDrop Styles */
+.uppy-DragDrop-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  max-width: 100%;
+  width: 100%;
+  height: 100%;
+  min-height: 170px;
+  background-color: #fff;
+  border: 2px dashed #e0e0e0;
+  border-radius: 8px;
+  cursor: pointer;
+  padding: 20px;
+  text-align: center;
+}
+.uppy-DragDrop-container:focus {
+  outline: none;
+  border-color: #2275d7;
+  box-shadow: 0 0 0 3px rgba(34, 117, 215, 0.15);
+}
+.uppy-DragDrop--isDragDropSupported {
+  border: 2px dashed #e0e0e0;
+}
+.uppy-DragDrop--isDraggingOver {
+  background-color: #eaeaea;
+  border-color: #2275d7;
+}
+.uppy-DragDrop-inner {
+  margin: 0;
+  text-align: center;
+}
+.uppy-DragDrop-arrow {
+  width: 60px;
+  height: 60px;
+  fill: #e0e0e0;
+  margin-bottom: 17px;
+}
+.uppy-DragDrop--isDraggingOver .uppy-DragDrop-arrow {
+  fill: #939393;
+}
+.uppy-DragDrop-label {
+  display: block;
+  font-size: 1.15em;
+  margin-bottom: 5px;
+}
+.uppy-DragDrop-note {
+  font-size: 1em;
+  color: #adadad;
+}
+.uppy-DragDrop-browse {
+  color: #2275d7;
+  cursor: pointer;
+}
+
+/* Uppy StatusBar Styles */
+.uppy-StatusBar {
+  display: flex;
+  position: relative;
+  height: 46px;
+  line-height: 40px;
+  font-size: 12px;
+  font-weight: 400;
+  color: #fff;
+  background-color: #fff;
+  z-index: 1001;
+  transition: height 0.2s;
+}
+.uppy-StatusBar::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 100%;
+  height: 2px;
+  background-color: #eaeaea;
+}
+.uppy-StatusBar[aria-hidden="true"] {
+  overflow-y: hidden;
+  height: 0;
+}
+.uppy-StatusBar.is-complete .uppy-StatusBar-progress {
+  background-color: #1bb240;
+}
+.uppy-StatusBar.is-error .uppy-StatusBar-progress {
+  background-color: #e32437;
+}
+.uppy-StatusBar.is-complete .uppy-StatusBar-statusIndicator {
+  color: #1bb240;
+}
+.uppy-StatusBar.is-error .uppy-StatusBar-statusIndicator {
+  color: #e32437;
+}
+.uppy-StatusBar-progress {
+  background-color: #2275d7;
+  height: 2px;
+  position: absolute;
+  z-index: 1001;
+  transition: background-color, width 0.3s ease-out;
+}
+.uppy-StatusBar-progress.is-indeterminate {
+  background-size: 64px 64px;
+  background-image: linear-gradient(45deg, rgba(0, 0, 0, 0.3) 25%, transparent 25%, transparent 50%, rgba(0, 0, 0, 0.3) 50%, rgba(0, 0, 0, 0.3) 75%, transparent 75%, transparent);
+  animation: uppy-StatusBar-ProgressStripes 1s linear infinite;
+}
+@keyframes uppy-StatusBar-ProgressStripes {
+  from {
+    background-position: 0 0;
+  }
+  to {
+    background-position: 64px 0;
+  }
+}
+.uppy-StatusBar-content {
+  display: flex;
+  align-items: center;
+  position: relative;
+  z-index: 1002;
+  padding-left: 10px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: #333;
+  height: 100%;
+}
+.uppy-StatusBar-status {
+  line-height: 1.4;
+  font-weight: 400;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding-right: 0.3em;
+}
+.uppy-StatusBar-statusPrimary {
+  font-weight: 500;
+  line-height: 1;
+}
+.uppy-StatusBar-statusSecondary {
+  margin-top: 0.2em;
+  font-size: 11px;
+  line-height: 1.2;
+  display: inline-block;
+  color: #757575;
+  white-space: nowrap;
+}
+.uppy-StatusBar-statusSecondaryHint {
+  display: inline-block;
+  vertical-align: middle;
+  margin-right: 5px;
+  line-height: 1;
+}
+.uppy-StatusBar-statusIndicator {
+  position: relative;
+  top: 1px;
+  color: #2275d7;
+  margin-right: 7px;
+}
+.uppy-StatusBar-statusIndicator svg {
+  vertical-align: text-bottom;
+}
+.uppy-StatusBar-actions {
+  display: flex;
+  align-items: center;
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 10px;
+  z-index: 1004;
+}
+.uppy-StatusBar-actionCircleBtn {
+  line-height: 1;
+  cursor: pointer;
+  margin: 3px;
+  opacity: 0.9;
+}
+.uppy-StatusBar-actionCircleBtn:focus {
+  outline: none;
+}
+.uppy-StatusBar-actionCircleBtn::-moz-focus-inner {
+  border: 0;
+}
+.uppy-StatusBar-actionCircleBtn:focus {
+  box-shadow: 0 0 0 3px rgba(34, 117, 215, 0.5);
+}
+.uppy-StatusBar-actionCircleBtn:hover {
+  opacity: 1;
+}
+.uppy-StatusBar-actionCircleBtn svg {
+  vertical-align: bottom;
+}
+.uppy-StatusBar-actionBtn {
+  display: inline-block;
+  vertical-align: middle;
+  font-size: 10px;
+  line-height: inherit;
+  color: #2275d7;
+  padding: 7px 8px;
+  border-radius: 2px;
+  font-weight: 500;
+  cursor: pointer;
+}
+.uppy-StatusBar-actionBtn:hover {
+  color: #1b5dab;
+}

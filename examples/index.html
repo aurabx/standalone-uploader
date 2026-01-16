@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Standalone Auraloader - Example</title>
+  <!-- No external CSS required - all styles bundled into JS -->
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background: #f4f4f5;
+      min-height: 100vh;
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    h1 {
+      color: #27272a;
+      margin-bottom: 8px;
+    }
+    .description {
+      color: #71717a;
+      margin-bottom: 24px;
+    }
+    .uploader-container {
+      background: white;
+      border-radius: 12px;
+      padding: 24px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    .config-form {
+      background: #fafafa;
+      border: 1px solid #e4e4e7;
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 24px;
+    }
+    .form-group {
+      margin-bottom: 12px;
+    }
+    .form-group label {
+      display: block;
+      font-weight: 500;
+      color: #27272a;
+      margin-bottom: 4px;
+      font-size: 14px;
+    }
+    .form-group input {
+      width: 100%;
+      padding: 8px 12px;
+      border: 1px solid #d4d4d8;
+      border-radius: 6px;
+      font-size: 14px;
+    }
+    .form-group input:focus {
+      outline: none;
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+    .init-btn {
+      background: #3b82f6;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 6px;
+      font-weight: 500;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    .init-btn:hover {
+      background: #2563eb;
+    }
+    .init-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    .status {
+      margin-top: 16px;
+      padding: 12px;
+      border-radius: 6px;
+      font-size: 14px;
+    }
+    .status.success {
+      background: #dcfce7;
+      color: #166534;
+    }
+    .status.error {
+      background: #fef2f2;
+      color: #dc2626;
+    }
+    .status.info {
+      background: #dbeafe;
+      color: #1e40af;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Standalone Auraloader</h1>
+    <p class="description">
+      A standalone DICOM uploader component for embedding in external applications.
+    </p>
+
+    <div class="config-form">
+      <div class="form-group">
+        <label for="apiToken">API Token</label>
+        <input type="text" id="apiToken" placeholder="Enter your API token">
+      </div>
+      <div class="form-group">
+        <label for="apiBaseUrl">API Base URL</label>
+        <input type="text" id="apiBaseUrl" placeholder="https://your-aura-instance.com/api" value="http://localhost:8000/api">
+      </div>
+      <button class="init-btn" id="initBtn" onclick="initUploader()">
+        Initialize Uploader
+      </button>
+      <div id="status"></div>
+    </div>
+
+    <div class="uploader-container">
+      <div id="uploader">
+        <!-- Uploader will be mounted here -->
+        <p style="color: #71717a; text-align: center; padding: 40px;">
+          Enter your API token and click "Initialize Uploader" to start.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Include the standalone uploader -->
+  <script src="../dist/standalone-auraloader.umd.js"></script>
+  
+  <script>
+    let uploader = null;
+
+    async function initUploader() {
+      const apiToken = document.getElementById('apiToken').value.trim();
+      const apiBaseUrl = document.getElementById('apiBaseUrl').value.trim();
+      const statusEl = document.getElementById('status');
+      const initBtn = document.getElementById('initBtn');
+
+      if (!apiToken) {
+        statusEl.className = 'status error';
+        statusEl.textContent = 'Please enter an API token.';
+        return;
+      }
+
+      if (!apiBaseUrl) {
+        statusEl.className = 'status error';
+        statusEl.textContent = 'Please enter an API base URL.';
+        return;
+      }
+
+      // Destroy existing uploader if any
+      if (uploader) {
+        uploader.destroy();
+      }
+
+      initBtn.disabled = true;
+      statusEl.className = 'status info';
+      statusEl.textContent = 'Initializing...';
+
+      try {
+        // Create new uploader instance
+        uploader = new StandaloneAuraloader({
+          apiToken: apiToken,
+          apiBaseUrl: apiBaseUrl,
+          containerId: 'uploader',
+          callbacks: {
+            onUploadComplete: (result) => {
+              console.log('Upload complete:', result);
+              statusEl.className = 'status success';
+              statusEl.textContent = `Upload complete! ${result.successful} file(s) uploaded.`;
+            },
+            onUploadError: (error) => {
+              console.error('Upload error:', error);
+              statusEl.className = 'status error';
+              statusEl.textContent = `Error: ${error.message}`;
+            },
+            onUploadCancel: () => {
+              console.log('Upload cancelled');
+              statusEl.className = 'status info';
+              statusEl.textContent = 'Upload cancelled.';
+            },
+            onStudiesFound: (studies) => {
+              console.log('Studies found:', studies);
+            },
+            onStateChange: (state) => {
+              console.log('State changed:', state.step);
+            }
+          }
+        });
+
+        // Initialize (fetches config from server)
+        await uploader.init();
+
+        // Mount the UI
+        await uploader.mount();
+
+        statusEl.className = 'status success';
+        statusEl.textContent = 'Uploader ready! Drag and drop DICOM files to begin.';
+      } catch (error) {
+        console.error('Failed to initialize:', error);
+        statusEl.className = 'status error';
+        statusEl.textContent = `Failed to initialize: ${error.message}`;
+      } finally {
+        initBtn.disabled = false;
+      }
+    }
+  </script>
+</body>
+</html>
