@@ -8,6 +8,17 @@ export interface AuraloaderConfig {
   apiBaseUrl: string;
   /** DOM element ID where the uploader should be mounted */
   containerId: string;
+  /** Optional patient ID to associate uploads with */
+  patientId?: string;
+  /** Optional app credentials identifying the application integration */
+  app?: {
+    /** Application integration ID */
+    id: string;
+    /** Application integration token */
+    token: string;
+  };
+  /** Optional context object for additional metadata */
+  context?: Record<string, unknown>;
   /** Optional callbacks for upload events */
   callbacks?: AuraloaderCallbacks;
 }
@@ -94,6 +105,12 @@ export interface UploadInitRequest {
   studies: StudyInfo[];
   mode: string;
   source: string;
+  patient_id?: string;
+  app?: {
+    id: string;
+    token: string;
+  };
+  context?: Record<string, unknown>;
 }
 
 /**

@@ -110,11 +110,27 @@
     <div class="config-form">
       <div class="form-group">
         <label for="apiToken">API Token</label>
-        <input type="text" id="apiToken" placeholder="Enter your API token">
+        <input type="text" id="apiToken" placeholder="Enter your API token" value="aura_au_uploader_tBAFMceOuwVL_ODcyOWQ0ZDItNTQwNS00ZGI1LWJiZWQtOTNkOTY5Yjc5NTE5_local">
       </div>
       <div class="form-group">
         <label for="apiBaseUrl">API Base URL</label>
-        <input type="text" id="apiBaseUrl" placeholder="https://your-aura-instance.com/api" value="http://localhost:8000/api">
+        <input type="text" id="apiBaseUrl" placeholder="https://your-aura-instance.com/api" value="https://aura.lndo.site/api">
+      </div>
+      <div class="form-group">
+        <label for="patientId">Patient ID (optional)</label>
+        <input type="text" id="patientId" placeholder="e.g., PAT-12345">
+      </div>
+      <div class="form-group">
+        <label for="appId">App ID (optional)</label>
+        <input type="text" id="appId" placeholder="Application integration ID" value="a0dac060-e9d0-4d44-b6cc-17a424a97dd7">
+      </div>
+      <div class="form-group">
+        <label for="appToken">App Token (optional)</label>
+        <input type="text" id="appToken" placeholder="Application integration token" value="app_VS54uYF4iz1kNkGatvWnf9LNSpIU03cSiBoe1JMQ5tSvyTC2RtH9x9epeQCA5xAm">
+      </div>
+      <div class="form-group">
+        <label for="context">Context JSON (optional)</label>
+        <input type="text" id="context" placeholder='{"referral_id": "REF-67890"}' value='{"referral_id": "REF-67890", "patient_id": "PAT-12345"}'>
       </div>
       <button class="init-btn" id="initBtn" onclick="initUploader()">
         Initialize Uploader
@@ -134,13 +150,17 @@
 
   <!-- Include the standalone uploader -->
   <script src="../dist/standalone-auraloader.umd.js"></script>
-  
+
   <script>
     let uploader = null;
 
     async function initUploader() {
       const apiToken = document.getElementById('apiToken').value.trim();
       const apiBaseUrl = document.getElementById('apiBaseUrl').value.trim();
+      const patientId = document.getElementById('patientId').value.trim();
+      const appId = document.getElementById('appId').value.trim();
+      const appToken = document.getElementById('appToken').value.trim();
+      const contextStr = document.getElementById('context').value.trim();
       const statusEl = document.getElementById('status');
       const initBtn = document.getElementById('initBtn');
 
@@ -154,6 +174,18 @@
         statusEl.className = 'status error';
         statusEl.textContent = 'Please enter an API base URL.';
         return;
+      }
+
+      // Parse context JSON if provided
+      let context = undefined;
+      if (contextStr) {
+        try {
+          context = JSON.parse(contextStr);
+        } catch (e) {
+          statusEl.className = 'status error';
+          statusEl.textContent = 'Invalid JSON in Context field.';
+          return;
+        }
       }
 
       // Destroy existing uploader if any
@@ -171,6 +203,9 @@
           apiToken: apiToken,
           apiBaseUrl: apiBaseUrl,
           containerId: 'uploader',
+          patientId: patientId || undefined,
+          app: (appId && appToken) ? { id: appId, token: appToken } : undefined,
+          context: context,
           callbacks: {
             onUploadComplete: (result) => {
               console.log('Upload complete:', result);

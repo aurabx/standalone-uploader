@@ -8,9 +8,9 @@
   "types": "dist/types/index.d.ts",
   "exports": {
     ".": {
+      "types": "./dist/types/index.d.ts",
       "import": "./dist/standalone-auraloader.es.js",
-      "require": "./dist/standalone-auraloader.umd.js",
-      "types": "./dist/types/index.d.ts"
+      "require": "./dist/standalone-auraloader.umd.js"
     }
   },
   "files": [

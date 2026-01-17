@@ -10,6 +10,7 @@ export class Renderer {
   private container: HTMLElement;
   private store: Store;
   private unsubscribe: (() => void) | null = null;
+  private onRenderCallback: ((state: UploaderState) => void) | null = null;
 
   constructor(containerId: string, store: Store) {
     const container = document.getElementById(containerId);
@@ -18,6 +19,13 @@ export class Renderer {
     }
     this.container = container;
     this.store = store;
+  }
+
+  /**
+   * Set a callback to be invoked after each render
+   */
+  onRender(callback: (state: UploaderState) => void): void {
+    this.onRenderCallback = callback;
   }
 
   /**
@@ -55,12 +63,33 @@ export class Renderer {
         font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         color: #52525b;
         max-width: 100%;
+        padding: 24px;
+      }
+      .sal-header {
+        margin-bottom: 16px;
+      }
+      .sal-title {
+        font-size: 24px;
+        font-weight: 700;
+        color: #1a1a1a;
+        margin: 0 0 8px 0;
+      }
+      .sal-description {
+        font-size: 14px;
+        color: #6b7280;
+        line-height: 1.5;
+        margin: 0;
+      }
+      .sal-status-message {
+        font-size: 14px;
+        color: #059669;
+        margin: 16px 0;
       }
       .sal-loader {
         width: 48px;
         height: 48px;
         border: 4px solid #e4e4e7;
-        border-top-color: #3b82f6;
+        border-top-color: #6366f1;
         border-radius: 50%;
         animation: sal-spin 1s linear infinite;
       }
@@ -82,46 +111,54 @@ export class Renderer {
         border-radius: 8px;
       }
       .sal-study-card {
-        display: grid;
-        gap: 16px;
-        grid-template-columns: 1fr auto;
+        display: flex;
+        justify-content: space-between;
         align-items: center;
         border-radius: 8px;
-        border: 1px solid #e4e4e7;
+        border: 1px solid #e5e7eb;
         background: white;
-        padding: 16px 24px;
-        margin-top: 16px;
-        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        padding: 16px 20px;
+        margin-bottom: 16px;
+      }
+      .sal-study-info {
+        flex: 1;
       }
       .sal-study-name {
         font-weight: 600;
-        color: #27272a;
-        margin-bottom: 4px;
-        overflow: hidden;
-        text-overflow: ellipsis;
+        font-size: 15px;
+        color: #1a1a1a;
+        margin-bottom: 2px;
       }
       .sal-study-desc {
-        font-weight: 500;
-        color: #52525b;
         font-size: 14px;
-        margin-bottom: 4px;
+        color: #4b5563;
+        margin-bottom: 2px;
       }
       .sal-study-meta {
-        font-size: 14px;
-        color: #71717a;
-        display: flex;
-        gap: 8px;
+        font-size: 13px;
+        color: #9ca3af;
       }
       .sal-study-meta span:not(:last-child)::after {
         content: '|';
-        margin-left: 8px;
-        color: #d4d4d8;
+        margin: 0 8px;
+        color: #d1d5db;
+      }
+      .sal-study-actions {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        margin-left: 16px;
+      }
+      .sal-images-count {
+        font-size: 13px;
+        color: #6b7280;
+        white-space: nowrap;
       }
       .sal-btn {
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        padding: 8px 16px;
+        padding: 10px 20px;
         border-radius: 6px;
         font-weight: 500;
         font-size: 14px;
@@ -134,19 +171,29 @@ export class Renderer {
         cursor: not-allowed;
       }
       .sal-btn-primary {
-        background: #3b82f6;
+        background: #6366f1;
         color: white;
       }
       .sal-btn-primary:hover:not(:disabled) {
-        background: #2563eb;
+        background: #4f46e5;
       }
       .sal-btn-secondary {
-        background: #f4f4f5;
-        color: #27272a;
-        border: 1px solid #e4e4e7;
+        background: #f3f4f6;
+        color: #374151;
+        border: 1px solid #e5e7eb;
       }
       .sal-btn-secondary:hover:not(:disabled) {
-        background: #e4e4e7;
+        background: #e5e7eb;
+      }
+      .sal-btn-skip {
+        background: white;
+        color: #374151;
+        border: 1px solid #d1d5db;
+        padding: 8px 16px;
+        font-size: 13px;
+      }
+      .sal-btn-skip:hover:not(:disabled) {
+        background: #f9fafb;
       }
       .sal-buttons {
         display: flex;
@@ -159,24 +206,48 @@ export class Renderer {
         gap: 8px;
       }
       .sal-drag-drop-area {
-        min-height: 200px;
-        border: 2px dashed #d4d4d8;
-        border-radius: 8px;
+        min-height: 180px;
+      }
+      .sal-drag-drop-text {
+        font-size: 14px;
+        color: #6b7280;
+      }
+      .sal-drag-drop-text a {
+        color: #6366f1;
+        text-decoration: none;
+        font-weight: 500;
+      }
+      .sal-drag-drop-text a:hover {
+        text-decoration: underline;
+      }
+      .sal-progress-container {
+        margin: 16px 0;
+      }
+      .sal-progress-bar {
+        height: 8px;
+        background: #e5e7eb;
+        border-radius: 4px;
+        overflow: hidden;
+      }
+      .sal-progress-fill {
+        height: 100%;
+        background: #6366f1;
+        border-radius: 4px;
+        transition: width 0.3s ease-out;
+      }
+      .sal-progress-fill.sal-complete {
+        background: #6366f1;
+      }
+      .sal-progress-status {
         display: flex;
         align-items: center;
-        justify-content: center;
+        gap: 8px;
+        margin-top: 8px;
+        font-size: 13px;
+        color: #6b7280;
       }
-      .sal-drag-drop-area-pending {
-        min-height: 100px;
-      }
-      .sal-progress-area {
-        margin-top: 16px;
-      }
-      .sal-title {
-        font-size: 18px;
-        font-weight: 600;
-        color: #27272a;
-        margin-bottom: 16px;
+      .sal-progress-status svg {
+        color: #6366f1;
       }
       .sal-center {
         display: flex;
@@ -191,9 +262,24 @@ export class Renderer {
         font-weight: 500;
       }
       .sal-hidden { display: none !important; }
-      .sal-images-count {
+      .sal-complete-section {
+        padding: 24px;
+      }
+      .sal-complete-title {
+        font-size: 24px;
+        font-weight: 700;
+        color: #1a1a1a;
+        margin-bottom: 8px;
+      }
+      .sal-complete-message {
         font-size: 14px;
-        color: #71717a;
+        color: #6b7280;
+        line-height: 1.5;
+      }
+      .sal-close-message {
+        font-size: 14px;
+        color: #6b7280;
+        margin-top: 16px;
       }
     `;
     document.head.appendChild(style);
@@ -211,6 +297,11 @@ export class Renderer {
       </div>
     `;
     this.attachEventListeners(state);
+    
+    // Call the render callback to allow plugins to be mounted
+    if (this.onRenderCallback) {
+      this.onRenderCallback(state);
+    }
   }
 
   private renderConnectionWarning(state: UploaderState): string {
@@ -246,14 +337,25 @@ export class Renderer {
     }
   }
 
+  private renderHeader(): string {
+    return `
+      <div class="sal-header">
+        <h2 class="sal-title">Upload</h2>
+        <p class="sal-description">Drag-and-drop your files. The uploader will filter out invalid files, and prepare your imaging for upload. Note: You do not need to select the imaging files from the folder.</p>
+      </div>
+    `;
+  }
+
   private renderStartStep(): string {
     return `
+      ${this.renderHeader()}
       <div id="sal-drag-drop-area" class="sal-drag-drop-area"></div>
     `;
   }
 
   private renderProcessingStep(): string {
     return `
+      ${this.renderHeader()}
       <div class="sal-center">
         <div class="sal-loader"></div>
         <div class="sal-center-message">Processing files...</div>
@@ -264,19 +366,21 @@ export class Renderer {
   private renderPendingStep(state: UploaderState): string {
     if (state.totalFiles < 1) {
       return `
+        ${this.renderHeader()}
         <div class="sal-center">
-          <p style="font-size: 24px; margin-bottom: 16px;">No valid DICOM images found</p>
-          <p style="color: #71717a;">Please ensure you're uploading valid DICOM files.</p>
+          <p style="font-size: 18px; margin-bottom: 16px; color: #1a1a1a;">No valid DICOM images found</p>
+          <p style="color: #6b7280; font-size: 14px;">Please ensure you're uploading valid DICOM files.</p>
         </div>
       `;
     }
 
     return `
-      <div class="sal-title">Ready to upload</div>
+      ${this.renderHeader()}
+      <p class="sal-status-message">The following studies were found</p>
       <div id="sal-studies-list">
         ${state.studies.map((study) => this.renderStudyCard(study)).join('')}
       </div>
-      <div id="sal-drag-drop-area" class="sal-drag-drop-area sal-drag-drop-area-pending" style="margin-top: 16px;"></div>
+      <div id="sal-drag-drop-area" class="sal-drag-drop-area" style="margin-top: 16px;"></div>
     `;
   }
 
@@ -287,7 +391,7 @@ export class Renderer {
 
     return `
       <div class="sal-study-card" data-study-uid="${study.study_uid}">
-        <div>
+        <div class="sal-study-info">
           <div class="sal-study-name">${this.escapeHtml(name)}</div>
           <div class="sal-study-desc">
             ${this.escapeHtml(study.study_description || 'No description')}
@@ -298,10 +402,10 @@ export class Renderer {
             <span>${this.escapeHtml(study.institution_name || 'Unknown institution')}</span>
           </div>
         </div>
-        <div style="display: flex; align-items: center; gap: 16px;">
+        <div class="sal-study-actions">
           <span class="sal-images-count">${study.images} image${study.images !== 1 ? 's' : ''} over ${study.series_count} series</span>
-          <button class="sal-btn sal-btn-secondary sal-remove-study" data-study-uid="${study.study_uid}">
-            Skip
+          <button class="sal-btn sal-btn-skip sal-remove-study" data-study-uid="${study.study_uid}">
+            Skip these
           </button>
         </div>
       </div>
@@ -309,13 +413,14 @@ export class Renderer {
   }
 
   private renderUploadingStep(state: UploaderState): string {
-    const title = state.complete
-      ? `Successfully uploaded ${state.totalFiles} image${state.totalFiles !== 1 ? 's' : ''}`
-      : `Uploading ${state.totalFiles} image${state.totalFiles !== 1 ? 's' : ''}...`;
+    const statusMessage = state.complete
+      ? `Successfully uploaded ${state.totalFiles} image${state.totalFiles !== 1 ? 's' : ''} to Aurabox`
+      : `Uploading ${state.totalFiles} image${state.totalFiles !== 1 ? 's' : ''} to Aurabox...`;
 
     if (state.zipping) {
       return `
-        <div class="sal-title">${title}</div>
+        ${this.renderHeader()}
+        <p class="sal-status-message">${statusMessage}</p>
         <div class="sal-center">
           <div class="sal-loader"></div>
           <div class="sal-center-message">Preparing files for upload...</div>
@@ -323,25 +428,27 @@ export class Renderer {
       `;
     }
 
+    if (state.complete) {
+      return `
+        ${this.renderHeader()}
+        <p class="sal-status-message">${statusMessage}</p>
+        <div id="sal-progress-area" class="sal-progress-area"></div>
+        <p class="sal-close-message">You may now close the uploader.</p>
+      `;
+    }
+
     return `
-      <div class="sal-title">${title}</div>
+      ${this.renderHeader()}
+      <p class="sal-status-message">${statusMessage}</p>
       <div id="sal-progress-area" class="sal-progress-area"></div>
     `;
   }
 
   private renderCompleteStep(state: UploaderState): string {
     return `
-      <div class="sal-center">
-        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2">
-          <circle cx="12" cy="12" r="10"/>
-          <path d="M9 12l2 2 4-4"/>
-        </svg>
-        <div class="sal-center-message" style="font-size: 24px; color: #22c55e;">
-          Upload complete!
-        </div>
-        <p style="color: #71717a; margin-top: 8px;">
-          ${state.totalFiles} image${state.totalFiles !== 1 ? 's' : ''} uploaded successfully.
-        </p>
+      <div class="sal-complete-section">
+        <h2 class="sal-complete-title">Complete</h2>
+        <p class="sal-complete-message">Upload successful. Scans take a few minutes to be processed and can be viewed in the imaging tab.</p>
       </div>
     `;
   }
@@ -390,8 +497,13 @@ export class Renderer {
       rightButtons.push(`<button class="sal-btn sal-btn-primary" id="sal-upload-btn">Upload</button>`);
     }
 
-    // Complete button
+    // Show close message when upload is complete
     if (state.step === 'uploading' && state.complete) {
+      // No button needed - message shown in the uploading step render
+    }
+
+    // Done button (on complete step)
+    if (state.step === 'complete') {
       rightButtons.push(`<button class="sal-btn sal-btn-primary" id="sal-done-btn">Done</button>`);
     }
 

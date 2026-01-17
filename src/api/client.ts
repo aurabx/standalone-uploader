@@ -48,12 +48,22 @@ export class ApiClient {
     studies: StudyInfo[];
     mode?: string;
     source?: string;
+    patient_id?: string;
+    app?: {
+      id: string;
+      token: string;
+    };
+    context?: Record<string, unknown>;
   }): Promise<UploadInitResponse> {
     const response = await this.client.post<UploadInitResponse>('/standalone/upload/init', {
       upload_id: data.upload_id,
       studies: data.studies,
-      mode: data.mode || 'standalone',
+      mode: 'bulk',
+      type: 'standalone',
       source: data.source || 'standalone-uploader',
+      patient_id: data.patient_id ?? null,
+      app: data.app,
+      context: data.context,
     });
     return response.data;
   }
@@ -131,6 +141,12 @@ export class ApiClient {
    */
   static getErrorMessage(error: unknown): string {
     if (error instanceof AxiosError) {
+      // Handle Laravel validation errors
+      if (error.response?.data?.errors) {
+        const errors = error.response.data.errors;
+        const messages = Object.values(errors).flat();
+        return messages.join(', ');
+      }
       return error.response?.data?.message || error.message;
     }
     if (error instanceof Error) {

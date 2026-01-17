@@ -121,14 +121,22 @@ export class StandaloneAuraloader {
       throw new Error('Renderer not initialized');
     }
 
+    // Set up render callback to remount Uppy plugins after DOM updates
+    this.renderer.onRender((state) => {
+      if (this.engine) {
+        // Remount DragDrop if target exists
+        if (state.step === 'start' || state.step === 'pending') {
+          this.engine.mountDragDrop();
+        }
+        // Remount StatusBar if target exists
+        if (state.step === 'uploading') {
+          this.engine.mountStatusBar();
+        }
+      }
+    });
+
     this.renderer.mount();
     this.setupUIEvents();
-
-    // Re-initialize engine plugins after renderer mounts
-    // (because targets now exist in the DOM)
-    if (this.engine) {
-      await this.engine.setup();
-    }
 
     console.debug('StandaloneAuraloader mounted');
   }
@@ -185,6 +193,7 @@ export class StandaloneAuraloader {
         });
 
         this.store.setComplete(true);
+        this.isUploading = false;
 
         // Notify callback
         this.config.callbacks?.onUploadComplete?.({
@@ -196,6 +205,7 @@ export class StandaloneAuraloader {
       } catch (error) {
         console.error('Failed to notify upload complete:', error);
         this.store.setError(ApiClient.getErrorMessage(error));
+        this.isUploading = false;
       }
     });
 
@@ -231,10 +241,18 @@ export class StandaloneAuraloader {
       this.store.setError(error.message);
     });
 
-    // Cancel
+    // Cancel - only handle if we're in an upload state
     this.engine.uppy.on('cancel-all', async () => {
+      const currentStep = this.store.getState().step;
+      // Only handle cancel if we're actually uploading
+      if (currentStep !== 'uploading') {
+        console.debug('Cancel-all triggered during non-upload state, ignoring');
+        return;
+      }
+
       console.debug('Upload cancelled');
       this.store.goto('cancelled');
+      this.isUploading = false;
 
       try {
         await this.apiClient.uploadCancel({
@@ -309,6 +327,8 @@ export class StandaloneAuraloader {
     });
   }
 
+  private isUploading = false;
+
   /**
    * Start the upload process
    */
@@ -316,6 +336,13 @@ export class StandaloneAuraloader {
     if (!this.engine) {
       throw new Error('Engine not initialized');
     }
+
+    // Prevent multiple upload calls
+    if (this.isUploading) {
+      console.debug('Upload already in progress, ignoring');
+      return;
+    }
+    this.isUploading = true;
 
     this.store.goto('uploading');
 
@@ -326,6 +353,9 @@ export class StandaloneAuraloader {
         studies: Object.values(this.engine.studiesInfo),
         mode: 'standalone',
         source: 'standalone-uploader',
+        patient_id: this.config.patientId,
+        app: this.config.app,
+        context: this.config.context,
       });
 
       if (result.studies?.length) {
@@ -341,7 +371,12 @@ export class StandaloneAuraloader {
       await this.engine.uppy.upload();
     } catch (error) {
       console.error('Upload failed:', error);
+      // Log full response for debugging
+      if ((error as { response?: { data?: unknown } })?.response?.data) {
+        console.error('Server response:', (error as { response: { data: unknown } }).response.data);
+      }
       this.store.setError(ApiClient.getErrorMessage(error));
+      this.isUploading = false;
     }
   }
 

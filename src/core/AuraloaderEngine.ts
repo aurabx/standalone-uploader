@@ -117,12 +117,21 @@ export class AuraloaderEngine {
    * Initialize Uppy plugins
    */
   private initializePlugins(): void {
+    this.mountDragDrop();
+    this.mountStatusBar();
+  }
+
+  /**
+   * Mount or remount DragDrop plugin to target element
+   */
+  mountDragDrop(): void {
     const dragDropElement = document.querySelector(this.config.dragDrop.target);
 
     if (dragDropElement) {
-      // Clear existing children
-      if (dragDropElement.firstChild) {
-        dragDropElement.firstChild.remove();
+      // Remove existing DragDrop plugin if present
+      const existingPlugin = this.uppy.getPlugin('DragDrop');
+      if (existingPlugin) {
+        this.uppy.removePlugin(existingPlugin);
       }
 
       this.uppy.use(DragDrop, {
@@ -137,8 +146,19 @@ export class AuraloaderEngine {
         },
       });
     }
+  }
 
+  /**
+   * Mount or remount StatusBar plugin to target element
+   */
+  mountStatusBar(): void {
     if (document.querySelector(this.config.statusBar.target)) {
+      // Remove existing StatusBar plugin if present
+      const existingPlugin = this.uppy.getPlugin('StatusBar');
+      if (existingPlugin) {
+        this.uppy.removePlugin(existingPlugin);
+      }
+
       this.uppy.use(StatusBar, {
         target: this.config.statusBar.target,
         hideUploadButton: this.config.statusBar.hideUploadButton ?? true,

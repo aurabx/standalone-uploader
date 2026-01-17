@@ -16,6 +16,7 @@ export default defineConfig({
     rollupOptions: {
       output: {
         globals: {},
+        exports: 'named',
       },
     },
     sourcemap: true,
