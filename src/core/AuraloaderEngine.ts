@@ -437,6 +437,11 @@ export class AuraloaderEngine {
       const studyUid = item.study_uid as string;
       const seriesUid = item.series_uid as string;
 
+      // Skip items without valid study or series UIDs
+      if (!studyUid || !seriesUid) {
+        continue;
+      }
+
       if (!(studyUid in build)) {
         build[studyUid] = {
           study_uid: studyUid,

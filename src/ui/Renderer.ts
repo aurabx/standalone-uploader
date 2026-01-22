@@ -401,6 +401,9 @@ export class Renderer {
             <span>${date || 'No date'}</span>
             <span>${this.escapeHtml(study.institution_name || 'Unknown institution')}</span>
           </div>
+          <div class="sal-study-meta">
+            <span class="sal-study-uid">ID: ${this.escapeHtml(study.study_uid)}</span>
+          </div>
         </div>
         <div class="sal-study-actions">
           <span class="sal-images-count">${study.images} image${study.images !== 1 ? 's' : ''} over ${study.series_count} series</span>
@@ -449,6 +452,7 @@ export class Renderer {
       <div class="sal-complete-section">
         <h2 class="sal-complete-title">Complete</h2>
         <p class="sal-complete-message">Upload successful. Scans take a few minutes to be processed and can be viewed in the imaging tab.</p>
+        <button class="sal-btn sal-btn-primary sal-add-more">Add more…</button>
       </div>
     `;
   }
@@ -566,6 +570,14 @@ export class Renderer {
     if (doneBtn) {
       doneBtn.addEventListener('click', () => {
         this.container.dispatchEvent(new CustomEvent('sal:done'));
+      });
+    }
+
+    // Add more button
+    const addMoreBtn = this.container.querySelector('.sal-add-more');
+    if (addMoreBtn) {
+      addMoreBtn.addEventListener('click', () => {
+        this.container.dispatchEvent(new CustomEvent('sal:reset'));
       });
     }
   }

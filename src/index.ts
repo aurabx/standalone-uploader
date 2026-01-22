@@ -8,7 +8,7 @@ export * from './types';
 
 /**
  * StandaloneAuraloader - A standalone DICOM uploader component.
- * 
+ *
  * @example
  * ```javascript
  * const uploader = new StandaloneAuraloader({
@@ -20,7 +20,7 @@ export * from './types';
  *     onUploadError: (error) => console.error('Error:', error),
  *   }
  * });
- * 
+ *
  * await uploader.init();
  * await uploader.mount();
  * ```
@@ -53,6 +53,100 @@ export class StandaloneAuraloader {
     if (!config.containerId) {
       throw new Error('containerId is required');
     }
+
+    // Validate URL format
+    try {
+      new URL(config.apiBaseUrl);
+    } catch {
+      throw new Error('apiBaseUrl must be a valid URL');
+    }
+
+    // Validate app credentials if provided
+    if (config.app) {
+      if (!config.app.id || typeof config.app.id !== 'string') {
+        throw new Error('app.id is required and must be a string');
+      }
+      if (!config.app.token || typeof config.app.token !== 'string') {
+        throw new Error('app.token is required and must be a string');
+      }
+    }
+  }
+
+  /**
+   * Validate server configuration response
+   */
+  private validateServerConfig(config: import('./types').UploaderConfigResponse): void {
+    if (!config.lift) {
+      throw new Error('Server config missing lift configuration');
+    }
+
+    if (!config.lift.endpoint || typeof config.lift.endpoint !== 'string') {
+      throw new Error('Server config missing or invalid lift.endpoint');
+    }
+
+    if (!config.lift.token || typeof config.lift.token !== 'string') {
+      throw new Error('Server config missing or invalid lift.token');
+    }
+
+    if (!config.lift.bucket || typeof config.lift.bucket !== 'string') {
+      throw new Error('Server config missing or invalid lift.bucket');
+    }
+
+    if (!config.mode || typeof config.mode !== 'string') {
+      throw new Error('Server config missing or invalid mode');
+    }
+  }
+
+  /**
+   * Validate container element exists in DOM
+   */
+  private validateContainer(): void {
+    const container = document.getElementById(this.config.containerId);
+    if (!container) {
+      throw new Error(`Container element with id "${this.config.containerId}" not found in DOM`);
+    }
+
+    // Check if container is suitable for mounting
+    if (container.children.length > 0) {
+      console.warn(`Container "${this.config.containerId}" is not empty. Existing content will be replaced.`);
+    }
+  }
+
+  /**
+   * Validate endpoint connectivity and app credentials
+   */
+  private async validateEndpoint(): Promise<void> {
+    try {
+      // Test basic connectivity and auth
+      await this.apiClient.getConfig();
+
+      // If app credentials are provided, validate them
+      if (this.config.app) {
+        console.debug('Validating app credentials...');
+        const result = await this.apiClient.validateAppCredentials(
+          this.config.app.id,
+          this.config.app.token
+        );
+
+        if (!result.valid) {
+          throw new Error('Application credentials are invalid');
+        }
+      }
+    } catch (error) {
+      if (ApiClient.isAuthError(error)) {
+        throw new Error('Authentication failed. Please check your apiToken.');
+      }
+
+      // Handle app credential validation errors specifically
+      if ((error as any).response?.status === 422) {
+        const message = ApiClient.getErrorMessage(error);
+        if (message.includes('app_id') || message.includes('app_token')) {
+          throw new Error(`Application credential validation failed: ${message}`);
+        }
+      }
+
+      throw new Error(`Server connectivity failed: ${ApiClient.getErrorMessage(error)}`);
+    }
   }
 
   /**
@@ -66,8 +160,17 @@ export class StandaloneAuraloader {
     }
 
     try {
+      // Validate container exists before proceeding
+      this.validateContainer();
+
+      // Validate endpoint connectivity and app credentials before proceeding
+      await this.validateEndpoint();
+
       // Fetch uploader configuration from server
       const serverConfig = await this.apiClient.getConfig();
+
+      // Validate server config response
+      this.validateServerConfig(serverConfig);
 
       // Create renderer first to get target selectors
       this.renderer = new Renderer(this.config.containerId, this.store);
@@ -150,7 +253,7 @@ export class StandaloneAuraloader {
     // Files added
     this.engine.uppy.on('files-added', async (files) => {
       const zipFiles = files.filter((file) => file.type === 'application/zip');
-      
+
       if (zipFiles.length === files.length && files.length > 0) {
         console.warn('ZIP files detected - skipping processing');
         return;
@@ -212,9 +315,9 @@ export class StandaloneAuraloader {
     // Upload error
     this.engine.uppy.on('upload-error', async (file, error, response) => {
       console.error('Upload error:', { file, error, response });
-      
+
       const statusCode = (response as { status?: number })?.status;
-      
+
       if (statusCode === 401) {
         this.store.setError('Authentication failed. Please refresh and try again.');
       } else if (statusCode === 403) {
@@ -350,7 +453,7 @@ export class StandaloneAuraloader {
       // Initialize upload on server
       const result = await this.apiClient.uploadInit({
         upload_id: this.engine.uniqueId,
-        studies: Object.values(this.engine.studiesInfo),
+        studies: this.engine.studiesInfo,
         mode: 'standalone',
         source: 'standalone-uploader',
         patient_id: this.config.patientId,

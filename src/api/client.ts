@@ -41,11 +41,22 @@ export class ApiClient {
   }
 
   /**
+   * Validate application credentials
+   */
+  async validateAppCredentials(appId: string, appToken: string): Promise<{ valid: boolean }> {
+    const response = await this.client.post<{ valid: boolean }>('/standalone/config/validate', {
+      app_id: appId,
+      app_token: appToken,
+    });
+    return response.data;
+  }
+
+  /**
    * Initialize an upload session
    */
   async uploadInit(data: {
     upload_id: string;
-    studies: StudyInfo[];
+    studies: Record<string, StudyInfo>;
     mode?: string;
     source?: string;
     patient_id?: string;

@@ -102,7 +102,7 @@ export interface UploaderConfigResponse {
  */
 export interface UploadInitRequest {
   upload_id: string;
-  studies: StudyInfo[];
+  studies: Record<string, StudyInfo>;
   mode: string;
   source: string;
   patient_id?: string;
