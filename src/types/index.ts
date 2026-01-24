@@ -2,7 +2,7 @@
  * Configuration options for StandaloneAuraloader
  */
 export interface AuraloaderConfig {
-  /** API token for authentication */
+  /** Service API key for team/realm identification */
   apiToken: string;
   /** Base URL for the Aura API (e.g., 'https://aura-instance.com/api') */
   apiBaseUrl: string;
@@ -10,13 +10,13 @@ export interface AuraloaderConfig {
   containerId: string;
   /** Optional patient ID to associate uploads with */
   patientId?: string;
-  /** Optional app credentials identifying the application integration */
-  app?: {
-    /** Application integration ID */
-    id: string;
-    /** Application integration token */
-    token: string;
-  };
+  /**
+   * Ephemeral upload token for authentication.
+   * This token should be obtained from your backend by exchanging HMAC credentials.
+   * Token format: aubt_<64-char-random-string>
+   * DO NOT expose HMAC secrets to the browser.
+   */
+  uploadToken: string;
   /** Optional context object for additional metadata */
   context?: Record<string, unknown>;
   /** Optional callbacks for upload events */
@@ -34,14 +34,14 @@ export interface AuraloaderCallbacks {
 /**
  * Upload workflow steps
  */
-export type UploaderStep = 
-  | 'start'      // Initial drag-drop state
-  | 'processing' // Processing DICOM files
-  | 'pending'    // Files processed, awaiting upload confirmation
-  | 'uploading'  // Upload in progress
-  | 'complete'   // Upload finished successfully
-  | 'error'      // Error occurred
-  | 'cancelled'; // Upload cancelled
+export type UploaderStep =
+  | "start" // Initial drag-drop state
+  | "processing" // Processing DICOM files
+  | "pending" // Files processed, awaiting upload confirmation
+  | "uploading" // Upload in progress
+  | "complete" // Upload finished successfully
+  | "error" // Error occurred
+  | "cancelled"; // Upload cancelled
 
 /**
  * Internal state for the uploader

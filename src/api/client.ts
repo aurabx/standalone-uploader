@@ -1,33 +1,45 @@
-import axios, { AxiosInstance, AxiosError } from 'axios';
+import axios, { AxiosInstance, AxiosError } from "axios";
 import type {
   UploaderConfigResponse,
-  UploadInitRequest,
   UploadInitResponse,
-  UploadLifecycleRequest,
   StudyInfo,
-} from '../types';
+} from "../types";
 
 /**
  * API client for communicating with the Aura standalone endpoints.
- * Handles token-based authentication and all upload lifecycle operations.
+ * Uses ephemeral upload tokens for authentication (Bearer token).
  */
 export class ApiClient {
   private client: AxiosInstance;
   private apiToken: string;
+  private uploadToken: string;
 
-  constructor(baseUrl: string, apiToken: string) {
+  /**
+   * Create a new API client.
+   *
+   * @param baseUrl - Base URL for the Aura API
+   * @param apiToken - Service API key for team/realm identification
+   * @param uploadToken - Ephemeral upload token obtained from backend
+   */
+  constructor(baseUrl: string, apiToken: string, uploadToken: string) {
     this.apiToken = apiToken;
+    this.uploadToken = uploadToken;
     this.client = axios.create({
-      baseURL: baseUrl.replace(/\/$/, ''), // Remove trailing slash
+      baseURL: baseUrl.replace(/\/$/, ""), // Remove trailing slash
       headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
+        Accept: "application/json",
       },
     });
 
-    // Add auth token to all requests
+    // Add Service API key for team/realm context
     this.client.interceptors.request.use((config) => {
-      config.headers.Authorization = `Bearer ${this.apiToken}`;
+      config.headers["X-Api-Key"] = this.apiToken;
+      return config;
+    });
+
+    // Add upload token as Bearer token
+    this.client.interceptors.request.use((config) => {
+      config.headers["Authorization"] = `Bearer ${this.uploadToken}`;
       return config;
     });
   }
@@ -36,18 +48,9 @@ export class ApiClient {
    * Get uploader configuration (Tus endpoint, credentials)
    */
   async getConfig(): Promise<UploaderConfigResponse> {
-    const response = await this.client.get<UploaderConfigResponse>('/standalone/config');
-    return response.data;
-  }
-
-  /**
-   * Validate application credentials
-   */
-  async validateAppCredentials(appId: string, appToken: string): Promise<{ valid: boolean }> {
-    const response = await this.client.post<{ valid: boolean }>('/standalone/config/validate', {
-      app_id: appId,
-      app_token: appToken,
-    });
+    const response = await this.client.get<UploaderConfigResponse>(
+      "/standalone/config"
+    );
     return response.data;
   }
 
@@ -60,22 +63,20 @@ export class ApiClient {
     mode?: string;
     source?: string;
     patient_id?: string;
-    app?: {
-      id: string;
-      token: string;
-    };
     context?: Record<string, unknown>;
   }): Promise<UploadInitResponse> {
-    const response = await this.client.post<UploadInitResponse>('/standalone/upload/init', {
-      upload_id: data.upload_id,
-      studies: data.studies,
-      mode: 'bulk',
-      type: 'standalone',
-      source: data.source || 'standalone-uploader',
-      patient_id: data.patient_id ?? null,
-      app: data.app,
-      context: data.context,
-    });
+    const response = await this.client.post<UploadInitResponse>(
+      "/standalone/upload/init",
+      {
+        upload_id: data.upload_id,
+        studies: data.studies,
+        mode: "bulk",
+        type: "standalone",
+        source: data.source || "standalone-uploader",
+        patient_id: data.patient_id ?? null,
+        context: data.context,
+      }
+    );
     return response.data;
   }
 
@@ -87,10 +88,10 @@ export class ApiClient {
     assembly_id?: string;
     mode?: string;
   }): Promise<void> {
-    await this.client.post('/standalone/upload/start', {
+    await this.client.post("/standalone/upload/start", {
       upload_id: data.upload_id,
       assembly_id: data.assembly_id,
-      mode: data.mode || 'standalone',
+      mode: data.mode || "standalone",
     });
   }
 
@@ -102,10 +103,10 @@ export class ApiClient {
     assembly_id?: string;
     mode?: string;
   }): Promise<void> {
-    await this.client.post('/standalone/upload/complete', {
+    await this.client.post("/standalone/upload/complete", {
       upload_id: data.upload_id,
       assembly_id: data.assembly_id,
-      mode: data.mode || 'standalone',
+      mode: data.mode || "standalone",
     });
   }
 
@@ -117,10 +118,10 @@ export class ApiClient {
     message: string;
     mode?: string;
   }): Promise<void> {
-    await this.client.post('/standalone/upload/error', {
+    await this.client.post("/standalone/upload/error", {
       upload_id: data.upload_id,
       message: data.message,
-      mode: data.mode || 'standalone',
+      mode: data.mode || "standalone",
     });
   }
 
@@ -131,9 +132,9 @@ export class ApiClient {
     upload_id: string;
     mode?: string;
   }): Promise<void> {
-    await this.client.post('/standalone/upload/cancel', {
+    await this.client.post("/standalone/upload/cancel", {
       upload_id: data.upload_id,
-      mode: data.mode || 'standalone',
+      mode: data.mode || "standalone",
     });
   }
 
@@ -156,13 +157,17 @@ export class ApiClient {
       if (error.response?.data?.errors) {
         const errors = error.response.data.errors;
         const messages = Object.values(errors).flat();
-        return messages.join(', ');
+        return messages.join(", ");
+      }
+      // Handle HMAC authentication errors
+      if (error.response?.data?.error?.message) {
+        return error.response.data.error.message;
       }
       return error.response?.data?.message || error.message;
     }
     if (error instanceof Error) {
       return error.message;
     }
-    return 'An unknown error occurred';
+    return "An unknown error occurred";
   }
 }

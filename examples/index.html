@@ -1,252 +1,549 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Standalone Auraloader - Example</title>
-  <!-- No external CSS required - all styles bundled into JS -->
-  <style>
-    * {
-      box-sizing: border-box;
-    }
-    body {
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      margin: 0;
-      padding: 20px;
-      background: #f4f4f5;
-      min-height: 100vh;
-    }
-    .container {
-      max-width: 800px;
-      margin: 0 auto;
-    }
-    h1 {
-      color: #27272a;
-      margin-bottom: 8px;
-    }
-    .description {
-      color: #71717a;
-      margin-bottom: 24px;
-    }
-    .uploader-container {
-      background: white;
-      border-radius: 12px;
-      padding: 24px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-    }
-    .config-form {
-      background: #fafafa;
-      border: 1px solid #e4e4e7;
-      border-radius: 8px;
-      padding: 16px;
-      margin-bottom: 24px;
-    }
-    .form-group {
-      margin-bottom: 12px;
-    }
-    .form-group label {
-      display: block;
-      font-weight: 500;
-      color: #27272a;
-      margin-bottom: 4px;
-      font-size: 14px;
-    }
-    .form-group input {
-      width: 100%;
-      padding: 8px 12px;
-      border: 1px solid #d4d4d8;
-      border-radius: 6px;
-      font-size: 14px;
-    }
-    .form-group input:focus {
-      outline: none;
-      border-color: #3b82f6;
-      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-    }
-    .init-btn {
-      background: #3b82f6;
-      color: white;
-      border: none;
-      padding: 10px 20px;
-      border-radius: 6px;
-      font-weight: 500;
-      cursor: pointer;
-      font-size: 14px;
-    }
-    .init-btn:hover {
-      background: #2563eb;
-    }
-    .init-btn:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
-    .status {
-      margin-top: 16px;
-      padding: 12px;
-      border-radius: 6px;
-      font-size: 14px;
-    }
-    .status.success {
-      background: #dcfce7;
-      color: #166534;
-    }
-    .status.error {
-      background: #fef2f2;
-      color: #dc2626;
-    }
-    .status.info {
-      background: #dbeafe;
-      color: #1e40af;
-    }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <h1>Standalone Auraloader</h1>
-    <p class="description">
-      A standalone DICOM uploader component for embedding in external applications.
-    </p>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Standalone Auraloader - Example</title>
+    <!-- No external CSS required - all styles bundled into JS -->
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+          Roboto, sans-serif;
+        margin: 0;
+        padding: 20px;
+        background: #f4f4f5;
+        min-height: 100vh;
+      }
+      .container {
+        max-width: 900px;
+        margin: 0 auto;
+      }
+      h1 {
+        color: #27272a;
+        margin-bottom: 8px;
+      }
+      .description {
+        color: #71717a;
+        margin-bottom: 24px;
+      }
+      .card {
+        background: white;
+        border-radius: 12px;
+        padding: 24px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        margin-bottom: 20px;
+      }
+      .card h2 {
+        margin-top: 0;
+        color: #27272a;
+        font-size: 18px;
+        margin-bottom: 16px;
+      }
+      .warning {
+        background: #fef3c7;
+        border: 1px solid #fbbf24;
+        border-radius: 8px;
+        padding: 16px;
+        margin-bottom: 24px;
+      }
+      .warning-title {
+        font-weight: 600;
+        color: #92400e;
+        margin-bottom: 4px;
+      }
+      .warning-text {
+        color: #78350f;
+        font-size: 14px;
+      }
+      .form-group {
+        margin-bottom: 16px;
+      }
+      .form-group label {
+        display: block;
+        font-weight: 500;
+        color: #27272a;
+        margin-bottom: 4px;
+        font-size: 14px;
+      }
+      .form-group input,
+      .form-group textarea {
+        width: 100%;
+        padding: 8px 12px;
+        border: 1px solid #d4d4d8;
+        border-radius: 6px;
+        font-size: 14px;
+        font-family: inherit;
+      }
+      .form-group input:focus,
+      .form-group textarea:focus {
+        outline: none;
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+      }
+      .btn {
+        background: #3b82f6;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 6px;
+        font-weight: 500;
+        cursor: pointer;
+        font-size: 14px;
+      }
+      .btn:hover {
+        background: #2563eb;
+      }
+      .btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+      .btn-secondary {
+        background: #6b7280;
+      }
+      .btn-secondary:hover {
+        background: #4b5563;
+      }
+      .status {
+        margin-top: 16px;
+        padding: 12px;
+        border-radius: 6px;
+        font-size: 14px;
+      }
+      .status.success {
+        background: #dcfce7;
+        color: #166534;
+      }
+      .status.error {
+        background: #fef2f2;
+        color: #dc2626;
+      }
+      .status.info {
+        background: #dbeafe;
+        color: #1e40af;
+      }
+      .token-display {
+        background: #f9fafb;
+        border: 1px solid #e5e7eb;
+        border-radius: 6px;
+        padding: 12px;
+        font-family: "Courier New", monospace;
+        font-size: 12px;
+        word-break: break-all;
+        margin-top: 8px;
+      }
+      code {
+        background: #f4f4f5;
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-family: "Courier New", monospace;
+        font-size: 13px;
+      }
+      .step-indicator {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 24px;
+      }
+      .step {
+        flex: 1;
+        padding: 12px;
+        background: #f4f4f5;
+        border-radius: 6px;
+        text-align: center;
+        font-size: 14px;
+        color: #71717a;
+      }
+      .step.active {
+        background: #dbeafe;
+        color: #1e40af;
+        font-weight: 500;
+      }
+      .step.complete {
+        background: #dcfce7;
+        color: #166534;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Standalone Auraloader</h1>
+      <p class="description">
+        A standalone DICOM uploader component with secure token-based
+        authentication.
+      </p>
 
-    <div class="config-form">
-      <div class="form-group">
-        <label for="apiToken">API Token</label>
-        <input type="text" id="apiToken" placeholder="Enter your API token" value="aura_au_standalone-uploader_Kd6jS2aQZ9Gw_ZjQ4NDgyY2UtNjE0OS00ZjViLWIwYTQtMmE4NWNjNGY3Y2E3_local">
+      <div class="warning">
+        <div class="warning-title">🔒 Security Notice</div>
+        <div class="warning-text">
+          This example demonstrates the full authentication flow including HMAC
+          credential exchange. In production,
+          <strong>NEVER expose HMAC secrets to the browser</strong>. Your
+          backend should handle Step 1 and only send the upload token to your
+          frontend.
+        </div>
       </div>
-      <div class="form-group">
-        <label for="apiBaseUrl">API Base URL</label>
-        <input type="text" id="apiBaseUrl" placeholder="https://your-aura-instance.com/api" value="https://aura.lndo.site/api">
-      </div>
-      <div class="form-group">
-        <label for="patientId">Patient ID (optional)</label>
-        <input type="text" id="patientId" placeholder="e.g., PAT-12345">
-      </div>
-      <div class="form-group">
-        <label for="appId">App ID (optional)</label>
-        <input type="text" id="appId" placeholder="Application integration ID" value="a0df1c5e-5550-4d16-9c9f-06872797f7fd">
-      </div>
-      <div class="form-group">
-        <label for="appToken">App Token (optional)</label>
-        <input type="text" id="appToken" placeholder="Application integration token" value="app_UiGFOHv2NWGGnUWtXbbuUFtavap59V1RZReyZDFvM5beHtrZ47Itr2qNIEd6gNS7">
-      </div>
-      <div class="form-group">
-        <label for="context">Context JSON (optional)</label>
-        <input type="text" id="context" placeholder='{"referral_id": "REF-67890"}' value='{"referral_id": "REF-67890", "patient_id": "PAT-12345", "patient": {"given_names": "John","family_name": "Smith","date_of_birth": "1977-06-03","sex": "m"}}'>
-      </div>
-      <button class="init-btn" id="initBtn" onclick="initUploader()">
-        Initialize Uploader
-      </button>
-      <div id="status"></div>
-    </div>
 
-    <div class="uploader-container">
-      <div id="uploader">
-        <!-- Uploader will be mounted here -->
-        <p style="color: #71717a; text-align: center; padding: 40px;">
-          Enter your API token and click "Initialize Uploader" to start.
+      <div class="step-indicator">
+        <div class="step" id="step1">Step 1: Get Token</div>
+        <div class="step" id="step2">Step 2: Initialize Uploader</div>
+      </div>
+
+      <!-- Step 1: Token Exchange -->
+      <div class="card" id="tokenCard">
+        <h2>Step 1: Exchange HMAC Credentials for Upload Token</h2>
+        <p style="color: #71717a; font-size: 14px; margin-top: 0">
+          In production, this step happens on your backend. The browser never
+          sees the HMAC secret. Both the Service API Key and HMAC credentials
+          are needed to exchange for a token.
         </p>
+
+        <div class="form-group">
+          <label for="apiBaseUrl">API Base URL</label>
+          <input
+            type="text"
+            id="apiBaseUrl"
+            placeholder="https://your-aura-instance.com/api"
+            value="https://aura.lndo.site/api"
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="serviceApiKey1">Service API Key</label>
+          <input
+            type="text"
+            id="serviceApiKey1"
+            placeholder="aura_au_standalone-uploader_..."
+            value="aura_au_standalone-uploader_WPxDrP6xDk4W_NzljZWJjODMtZDc1Yy00OGU4LTk2N2MtMWZiMjFlOTRjNWQ3_local"
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="appPublicKey">HMAC Public Key (App ID)</label>
+          <input
+            type="text"
+            id="appPublicKey"
+            placeholder="aura_pk_..."
+            value="aura_pk_CZ6oi7w6vHolKexRp1agCGdOZLoP1nOqfb5rvfyzps0QXCjv"
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="appSecret">HMAC Secret (⚠️ Backend only!)</label>
+          <input
+            type="password"
+            id="appSecret"
+            placeholder="aura_sk_..."
+            value="aura_sk_55yA3KehBVB375Qk5zJ4XifEvUfeyJazhjminUJ0OAV8czHC"
+          />
+        </div>
+
+        <button class="btn" id="getTokenBtn" onclick="exchangeForToken()">
+          Get Upload Token
+        </button>
+        <div id="tokenStatus"></div>
+
+        <div id="tokenResultDiv" style="display: none">
+          <div class="form-group" style="margin-top: 20px">
+            <label>Upload Token (Valid for 1 hour)</label>
+            <div class="token-display" id="tokenDisplay"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 2: Initialize Uploader -->
+      <div
+        class="card"
+        id="uploaderCard"
+        style="opacity: 0.5; pointer-events: none"
+      >
+        <h2>Step 2: Initialize Uploader with Token</h2>
+
+        <div class="form-group">
+          <label for="serviceApiKey">Service API Key</label>
+          <input
+            type="text"
+            id="serviceApiKey"
+            placeholder="aura_au_standalone-uploader_..."
+            value="aura_au_standalone-uploader_WPxDrP6xDk4W_NzljZWJjODMtZDc1Yy00OGU4LTk2N2MtMWZiMjFlOTRjNWQ3_local"
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="uploadToken">Upload Token (from Step 1)</label>
+          <input type="text" id="uploadToken" placeholder="aubt_..." readonly />
+        </div>
+
+        <div class="form-group">
+          <label for="patientId">Patient ID (optional)</label>
+          <input type="text" id="patientId" placeholder="e.g., PAT-12345" />
+        </div>
+
+        <div class="form-group">
+          <label for="context">Context JSON (optional)</label>
+          <textarea
+            id="context"
+            rows="3"
+            placeholder='{"referral_id": "REF-67890"}'
+          >
+{"referral_id": "REF-67890", "patient_id": "PAT-12345", "patient": {"given_names": "John","family_name": "Smith","date_of_birth": "1977-06-03","sex": "m"}}</textarea
+          >
+        </div>
+
+        <button class="btn" id="initBtn" onclick="initUploader()">
+          Initialize Uploader
+        </button>
+        <button
+          class="btn btn-secondary"
+          onclick="reset()"
+          style="margin-left: 8px"
+        >
+          Reset
+        </button>
+        <div id="uploaderStatus"></div>
+      </div>
+
+      <div class="card">
+        <div id="uploader">
+          <!-- Uploader will be mounted here -->
+          <p style="color: #71717a; text-align: center; padding: 40px">
+            Complete steps above to start uploading.
+          </p>
+        </div>
       </div>
     </div>
-  </div>
 
-  <!-- Include the standalone uploader -->
-  <script src="../dist/standalone-auraloader.umd.js"></script>
+    <!-- Include the standalone uploader (UMD bundle with HMAC signer) -->
+    <script src="../dist/standalone-auraloader.umd.js"></script>
 
-  <script>
-    let uploader = null;
+    <script>
+      let uploader = null;
+      let currentToken = null;
 
-    async function initUploader() {
-      const apiToken = document.getElementById('apiToken').value.trim();
-      const apiBaseUrl = document.getElementById('apiBaseUrl').value.trim();
-      const patientId = document.getElementById('patientId').value.trim();
-      const appId = document.getElementById('appId').value.trim();
-      const appToken = document.getElementById('appToken').value.trim();
-      const contextStr = document.getElementById('context').value.trim();
-      const statusEl = document.getElementById('status');
-      const initBtn = document.getElementById('initBtn');
+      // Exchange HMAC credentials for upload token
+      // NOTE: In production, this happens on your BACKEND, not in the browser!
+      async function exchangeForToken() {
+        const apiBaseUrl = document.getElementById("apiBaseUrl").value.trim();
+        const serviceApiKey = document
+          .getElementById("serviceApiKey1")
+          .value.trim();
+        const appPublicKey = document
+          .getElementById("appPublicKey")
+          .value.trim();
+        const appSecret = document.getElementById("appSecret").value.trim();
+        const tokenStatus = document.getElementById("tokenStatus");
+        const getTokenBtn = document.getElementById("getTokenBtn");
 
-      if (!apiToken) {
-        statusEl.className = 'status error';
-        statusEl.textContent = 'Please enter an API token.';
-        return;
-      }
-
-      if (!apiBaseUrl) {
-        statusEl.className = 'status error';
-        statusEl.textContent = 'Please enter an API base URL.';
-        return;
-      }
-
-      // Parse context JSON if provided
-      let context = undefined;
-      if (contextStr) {
-        try {
-          context = JSON.parse(contextStr);
-        } catch (e) {
-          statusEl.className = 'status error';
-          statusEl.textContent = 'Invalid JSON in Context field.';
+        if (!apiBaseUrl || !serviceApiKey || !appPublicKey || !appSecret) {
+          tokenStatus.className = "status error";
+          tokenStatus.textContent = "Please fill in all fields.";
           return;
+        }
+
+        // Copy to Step 2
+        document.getElementById("serviceApiKey").value = serviceApiKey;
+
+        getTokenBtn.disabled = true;
+        tokenStatus.className = "status info";
+        tokenStatus.textContent = "Exchanging credentials...";
+
+        try {
+          // Create HMAC signer (this would be on your backend)
+          // HmacSigner is exported to window in UMD build
+          const signer = new window.HmacSigner(appPublicKey, appSecret);
+
+          // Parse the base URL to get the host
+          const baseUrlObj = new URL(apiBaseUrl);
+          const host = baseUrlObj.host;
+
+          const config = {
+            method: "POST",
+            url: "/standalone/auth/exchange",
+            baseURL: apiBaseUrl,
+            headers: {
+              "Content-Type": "application/json",
+              "X-Api-Key": serviceApiKey, // Service API Key for team/realm identification
+              Host: host, // Include Host in signature (browsers will send it automatically)
+            },
+            data: {
+              ttl: 3600,
+              scopes: ["upload:init", "upload:manage", "integration:read"],
+            },
+          };
+
+          // Sign the request
+          await signer.sign(config);
+
+          // Make the request (remove Host header as browser will set it)
+          const requestHeaders = { ...config.headers };
+          delete requestHeaders.Host;
+
+          const response = await fetch(
+            `${apiBaseUrl}/standalone/auth/exchange`,
+            {
+              method: "POST",
+              headers: requestHeaders,
+              body: JSON.stringify(config.data),
+            }
+          );
+
+          if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error?.message || "Token exchange failed");
+          }
+
+          const tokenData = await response.json();
+          currentToken = tokenData.token;
+
+          // Display token
+          document.getElementById("tokenDisplay").textContent = currentToken;
+          document.getElementById("tokenResultDiv").style.display = "block";
+          document.getElementById("uploadToken").value = currentToken;
+
+          // Enable uploader card
+          document.getElementById("uploaderCard").style.opacity = "1";
+          document.getElementById("uploaderCard").style.pointerEvents = "auto";
+
+          // Update steps
+          document.getElementById("step1").classList.add("complete");
+          document.getElementById("step2").classList.add("active");
+
+          tokenStatus.className = "status success";
+          tokenStatus.textContent = `Token obtained! Valid until ${new Date(
+            tokenData.expires_at
+          ).toLocaleString()}`;
+        } catch (error) {
+          console.error("Token exchange failed:", error);
+          tokenStatus.className = "status error";
+          tokenStatus.textContent = `Failed: ${error.message}`;
+        } finally {
+          getTokenBtn.disabled = false;
         }
       }
 
-      // Destroy existing uploader if any
-      if (uploader) {
-        uploader.destroy();
-      }
+      async function initUploader() {
+        const apiBaseUrl = document.getElementById("apiBaseUrl").value.trim();
+        const serviceApiKey = document
+          .getElementById("serviceApiKey")
+          .value.trim();
+        const uploadToken = document.getElementById("uploadToken").value.trim();
+        const patientId = document.getElementById("patientId").value.trim();
+        const contextStr = document.getElementById("context").value.trim();
+        const statusEl = document.getElementById("uploaderStatus");
+        const initBtn = document.getElementById("initBtn");
 
-      initBtn.disabled = true;
-      statusEl.className = 'status info';
-      statusEl.textContent = 'Initializing...';
+        if (!uploadToken) {
+          statusEl.className = "status error";
+          statusEl.textContent = "Please get an upload token first.";
+          return;
+        }
 
-      try {
-        // Create new uploader instance
-        uploader = new StandaloneAuraloader({
-          apiToken: apiToken,
-          apiBaseUrl: apiBaseUrl,
-          containerId: 'uploader',
-          patientId: patientId || undefined,
-          app: (appId && appToken) ? { id: appId, token: appToken } : undefined,
-          context: context,
-          callbacks: {
-            onUploadComplete: (result) => {
-              console.log('Upload complete:', result);
-              statusEl.className = 'status success';
-              statusEl.textContent = `Upload complete! ${result.successful} file(s) uploaded.`;
-            },
-            onUploadError: (error) => {
-              console.error('Upload error:', error);
-              statusEl.className = 'status error';
-              statusEl.textContent = `Error: ${error.message}`;
-            },
-            onUploadCancel: () => {
-              console.log('Upload cancelled');
-              statusEl.className = 'status info';
-              statusEl.textContent = 'Upload cancelled.';
-            },
-            onStudiesFound: (studies) => {
-              console.log('Studies found:', studies);
-            },
-            onStateChange: (state) => {
-              console.log('State changed:', state.step);
-            }
+        // Parse context JSON if provided
+        let context = undefined;
+        if (contextStr) {
+          try {
+            context = JSON.parse(contextStr);
+          } catch (e) {
+            statusEl.className = "status error";
+            statusEl.textContent = "Invalid JSON in Context field.";
+            return;
           }
-        });
+        }
 
-        // Initialize (fetches config from server)
-        await uploader.init();
+        // Destroy existing uploader if any
+        if (uploader) {
+          uploader.destroy();
+        }
 
-        // Mount the UI
-        await uploader.mount();
+        initBtn.disabled = true;
+        statusEl.className = "status info";
+        statusEl.textContent = "Initializing...";
 
-        statusEl.className = 'status success';
-        statusEl.textContent = 'Uploader ready! Drag and drop DICOM files to begin.';
-      } catch (error) {
-        console.error('Failed to initialize:', error);
-        statusEl.className = 'status error';
-        statusEl.textContent = `Failed to initialize: ${error.message}`;
-      } finally {
-        initBtn.disabled = false;
+        try {
+          // Create new uploader instance with upload token
+          uploader = new StandaloneAuraloader({
+            apiToken: serviceApiKey,
+            apiBaseUrl: apiBaseUrl,
+            uploadToken: uploadToken,
+            containerId: "uploader",
+            patientId: patientId || undefined,
+            context: context,
+            callbacks: {
+              onUploadComplete: (result) => {
+                console.log("Upload complete:", result);
+                statusEl.className = "status success";
+                statusEl.textContent = `Upload complete! ${result.successful} file(s) uploaded.`;
+              },
+              onUploadError: (error) => {
+                console.error("Upload error:", error);
+                statusEl.className = "status error";
+                statusEl.textContent = `Error: ${error.message}`;
+              },
+              onUploadCancel: () => {
+                console.log("Upload cancelled");
+                statusEl.className = "status info";
+                statusEl.textContent = "Upload cancelled.";
+              },
+              onStudiesFound: (studies) => {
+                console.log("Studies found:", studies);
+              },
+              onStateChange: (state) => {
+                console.log("State changed:", state.step);
+              },
+            },
+          });
+
+          // Initialize (fetches config from server)
+          await uploader.init();
+
+          // Mount the UI
+          await uploader.mount();
+
+          statusEl.className = "status success";
+          statusEl.textContent =
+            "Uploader ready! Drag and drop DICOM files to begin.";
+        } catch (error) {
+          console.error("Failed to initialize:", error);
+          statusEl.className = "status error";
+          statusEl.textContent = `Failed to initialize: ${error.message}`;
+        } finally {
+          initBtn.disabled = false;
+        }
       }
-    }
-  </script>
-</body>
+
+      function reset() {
+        // Reset everything
+        if (uploader) {
+          uploader.destroy();
+          uploader = null;
+        }
+        currentToken = null;
+
+        // Clear token display
+        document.getElementById("tokenDisplay").textContent = "";
+        document.getElementById("tokenResultDiv").style.display = "none";
+        document.getElementById("uploadToken").value = "";
+
+        // Disable uploader card
+        document.getElementById("uploaderCard").style.opacity = "0.5";
+        document.getElementById("uploaderCard").style.pointerEvents = "none";
+
+        // Reset steps
+        document.getElementById("step1").classList.remove("complete");
+        document.getElementById("step2").classList.remove("active");
+
+        // Clear statuses
+        document.getElementById("tokenStatus").textContent = "";
+        document.getElementById("uploaderStatus").textContent = "";
+
+        // Reset uploader container
+        document.getElementById("uploader").innerHTML = `
+          <p style="color: #71717a; text-align: center; padding: 40px">
+            Complete steps above to start uploading.
+          </p>
+        `;
+      }
+    </script>
+  </body>
 </html>
