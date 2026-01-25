@@ -175,13 +175,17 @@
       </p>
 
       <div class="warning">
-        <div class="warning-title">🔒 Security Notice</div>
+        <div class="warning-title">🔒 Security Notice - DEMO ONLY</div>
         <div class="warning-text">
           This example demonstrates the full authentication flow including HMAC
-          credential exchange. In production,
-          <strong>NEVER expose HMAC secrets to the browser</strong>. Your
-          backend should handle Step 1 and only send the upload token to your
-          frontend.
+          credential exchange <strong>for demo/development purposes only</strong>.
+          <br /><br />
+          <strong>In production:</strong>
+          <ul style="margin: 8px 0 0 0; padding-left: 20px;">
+            <li>Use <code>@aurabx/uploader-client</code> on your <strong>backend server</strong> for HMAC signing</li>
+            <li><strong>NEVER</strong> expose HMAC secrets to the browser</li>
+            <li>Your backend exchanges credentials and sends only the upload token to your frontend</li>
+          </ul>
         </div>
       </div>
 
@@ -194,9 +198,10 @@
       <div class="card" id="tokenCard">
         <h2>Step 1: Exchange HMAC Credentials for Upload Token</h2>
         <p style="color: #71717a; font-size: 14px; margin-top: 0">
-          In production, this step happens on your backend. The browser never
-          sees the HMAC secret. Both the Service API Key and HMAC credentials
-          are needed to exchange for a token.
+          <strong>⚠️ DEMO ONLY:</strong> In production, this step happens on your
+          backend using <code>@aurabx/uploader-client</code>. The browser should
+          never see the HMAC secret. Your backend exchanges credentials and sends
+          only the upload token to your frontend.
         </p>
 
         <div class="form-group">
@@ -205,7 +210,6 @@
             type="text"
             id="apiBaseUrl"
             placeholder="https://your-aura-instance.com/api"
-            value="https://aura.lndo.site/api"
           />
         </div>
 
@@ -215,7 +219,6 @@
             type="text"
             id="serviceApiKey1"
             placeholder="aura_au_standalone-uploader_..."
-            value="aura_au_standalone-uploader_WPxDrP6xDk4W_NzljZWJjODMtZDc1Yy00OGU4LTk2N2MtMWZiMjFlOTRjNWQ3_local"
           />
         </div>
 
@@ -225,17 +228,15 @@
             type="text"
             id="appPublicKey"
             placeholder="aura_pk_..."
-            value="aura_pk_CZ6oi7w6vHolKexRp1agCGdOZLoP1nOqfb5rvfyzps0QXCjv"
           />
         </div>
 
         <div class="form-group">
-          <label for="appSecret">HMAC Secret (⚠️ Backend only!)</label>
+          <label for="appSecret">HMAC Secret (⚠️ DEMO ONLY - use @aurabx/uploader-client on backend!)</label>
           <input
             type="password"
             id="appSecret"
             placeholder="aura_sk_..."
-            value="aura_sk_55yA3KehBVB375Qk5zJ4XifEvUfeyJazhjminUJ0OAV8czHC"
           />
         </div>
 
@@ -266,7 +267,6 @@
             type="text"
             id="serviceApiKey"
             placeholder="aura_au_standalone-uploader_..."
-            value="aura_au_standalone-uploader_WPxDrP6xDk4W_NzljZWJjODMtZDc1Yy00OGU4LTk2N2MtMWZiMjFlOTRjNWQ3_local"
           />
         </div>
 
@@ -314,7 +314,8 @@
       </div>
     </div>
 
-    <!-- Include the standalone uploader (UMD bundle with HMAC signer) -->
+    <!-- Include the standalone uploader (UMD bundle) -->
+    <!-- Note: HMAC signer included for demo only. In production, use @aurabx/uploader-client on your server -->
     <script src="../dist/standalone-auraloader.umd.js"></script>
 
     <script>
@@ -322,7 +323,8 @@
       let currentToken = null;
 
       // Exchange HMAC credentials for upload token
-      // NOTE: In production, this happens on your BACKEND, not in the browser!
+      // ⚠️ DEMO ONLY: In production, use @aurabx/uploader-client on your backend!
+      // Your backend should exchange credentials and send only the upload token to your frontend.
       async function exchangeForToken() {
         const apiBaseUrl = document.getElementById("apiBaseUrl").value.trim();
         const serviceApiKey = document
@@ -349,8 +351,9 @@
         tokenStatus.textContent = "Exchanging credentials...";
 
         try {
-          // Create HMAC signer (this would be on your backend)
-          // HmacSigner is exported to window in UMD build
+          // ⚠️ DEMO ONLY: Create HMAC signer
+          // In production, use @aurabx/uploader-client on your backend server
+          // HmacSigner is exported to window in UMD build for demo purposes
           const signer = new window.HmacSigner(appPublicKey, appSecret);
 
           // Parse the base URL to get the host

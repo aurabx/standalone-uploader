@@ -3,6 +3,19 @@
  *
  * Implements the AURA-HMAC-SHA256 signing protocol as specified in
  * docs/architecture/hmac-request-signing/specification.md
+ *
+ * @remarks
+ * **WARNING: DEMO/DEVELOPMENT USE ONLY**
+ *
+ * This browser-compatible HMAC signer is included for demonstration and
+ * development purposes only. In production environments:
+ *
+ * - NEVER expose HMAC secrets to the browser
+ * - HMAC credential exchange should happen on your backend server
+ * - Use the `@aurabx/uploader-client` package for server-side HMAC signing
+ * - Your frontend should only receive ephemeral upload tokens from your backend
+ *
+ * @see {@link https://github.com/aurabx/uploader-client} for server-side implementation
  */
 
 import { hmacSha256, hmacSha256Raw, sha256, generateNonce } from "./crypto";
@@ -16,8 +29,12 @@ import { ALGORITHM, SERVICE, REQUIRED_HEADERS } from "./types";
 /**
  * HMAC request signer for Aura API authentication.
  *
+ * **WARNING: This is for DEMO/DEVELOPMENT use only.**
+ * In production, use `@aurabx/uploader-client` on your server.
+ *
  * @example
  * ```typescript
+ * // DEMO ONLY - Do not use in production browser code!
  * const signer = new HmacSigner('app-id', 'app-secret');
  *
  * // Sign an Axios request config
@@ -51,7 +68,8 @@ export class HmacSigner {
   async sign(config: SignableRequest): Promise<void> {
     const timestamp = Math.floor(Date.now() / 1000).toString();
     const nonce = generateNonce();
-    const date = this.getDateString();
+    // Derive date from timestamp to ensure consistency with server
+    const date = this.getDateFromTimestamp(timestamp);
 
     // Ensure headers object exists
     config.headers = config.headers || {};
@@ -431,10 +449,12 @@ export class HmacSigner {
   }
 
   /**
-   * Get the current date in YYYYMMDD format.
+   * Get the date in YYYYMMDD format from a Unix timestamp.
+   * Uses UTC to match server-side behavior.
    */
-  private getDateString(): string {
-    return new Date().toISOString().slice(0, 10).replace(/-/g, "");
+  private getDateFromTimestamp(timestamp: string): string {
+    const date = new Date(parseInt(timestamp, 10) * 1000);
+    return date.toISOString().slice(0, 10).replace(/-/g, "");
   }
 
   /**

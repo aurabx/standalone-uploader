@@ -1,3 +1,39 @@
+/**
+ * Standalone Auraloader - Embeddable DICOM Uploader Component
+ *
+ * A standalone, embeddable DICOM uploader that can be integrated into any
+ * web application. Handles file selection, DICOM parsing, and secure uploads
+ * to the Aura platform.
+ *
+ * @remarks
+ * ## Authentication Flow
+ *
+ * This component uses ephemeral upload tokens for authentication. The recommended
+ * integration pattern is:
+ *
+ * 1. **Backend**: Use `@aurabx/uploader-client` to exchange HMAC credentials for
+ *    an upload token (server-side only - NEVER expose HMAC secrets to browsers)
+ *
+ * 2. **Frontend**: Pass the upload token to this component for secure uploads
+ *
+ * ```typescript
+ * // Your backend (Node.js) - uses @aurabx/uploader-client
+ * const client = new AuraUploaderClient({ appId, appSecret, apiKey, baseUrl });
+ * const { token } = await client.exchangeToken();
+ * // Send 'token' to your frontend
+ *
+ * // Your frontend - uses @aurabx/standalone-uploader
+ * const uploader = new StandaloneAuraloader({
+ *   apiToken: 'your-api-key',
+ *   apiBaseUrl: 'https://api.aura.example.com',
+ *   uploadToken: token, // From your backend
+ *   containerId: 'uploader',
+ * });
+ * ```
+ *
+ * @packageDocumentation
+ */
+
 import type { AuraloaderConfig, StudyInfo, UploadResult } from "./types";
 import { ApiClient } from "./api/client";
 import { AuraloaderEngine } from "./core/AuraloaderEngine";
@@ -6,6 +42,15 @@ import { Renderer } from "./ui/Renderer";
 import { HmacSigner, createSigner } from "./hmac";
 
 export * from "./types";
+
+/**
+ * HMAC signing utilities - DEMO/DEVELOPMENT USE ONLY.
+ *
+ * In production, use `@aurabx/uploader-client` on your server to handle
+ * HMAC credential exchange. Never expose HMAC secrets to browsers.
+ *
+ * @see {@link https://github.com/aurabx/uploader-client}
+ */
 export * from "./hmac";
 
 /**
@@ -87,19 +132,19 @@ export class StandaloneAuraloader {
       throw new Error("Server config missing lift configuration");
     }
 
-    if (!config.lift.endpoint || typeof config.lift.endpoint !== "string") {
+    if (!config.lift.endpoint) {
       throw new Error("Server config missing or invalid lift.endpoint");
     }
 
-    if (!config.lift.token || typeof config.lift.token !== "string") {
+    if (!config.lift.token ) {
       throw new Error("Server config missing or invalid lift.token");
     }
 
-    if (!config.lift.bucket || typeof config.lift.bucket !== "string") {
+    if (!config.lift.bucket) {
       throw new Error("Server config missing or invalid lift.bucket");
     }
 
-    if (!config.mode || typeof config.mode !== "string") {
+    if (!config.mode) {
       throw new Error("Server config missing or invalid mode");
     }
   }
@@ -524,7 +569,8 @@ export class StandaloneAuraloader {
 if (typeof window !== "undefined") {
   const w = window as any;
   w.StandaloneAuraloader = StandaloneAuraloader;
-  // Also export HMAC utilities for demo/backend usage
+  // Export HMAC utilities for DEMO/DEVELOPMENT only
+  // WARNING: In production, use @aurabx/uploader-client on your server
   w.HmacSigner = HmacSigner;
   w.createSigner = createSigner;
 }
