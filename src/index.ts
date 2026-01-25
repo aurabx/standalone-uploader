@@ -49,7 +49,7 @@ export * from "./types";
  * In production, use `@aurabx/uploader-client` on your server to handle
  * HMAC credential exchange. Never expose HMAC secrets to browsers.
  *
- * @see {@link https://github.com/aurabx/uploader-client}
+ * @see {@link https://www.npmjs.com/package/@aurabx/uploader-client} - Server-side HMAC signing for Node.js
  */
 export * from "./hmac";
 

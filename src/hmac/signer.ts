@@ -15,7 +15,7 @@
  * - Use the `@aurabx/uploader-client` package for server-side HMAC signing
  * - Your frontend should only receive ephemeral upload tokens from your backend
  *
- * @see {@link https://github.com/aurabx/uploader-client} for server-side implementation
+ * @see {@link https://www.npmjs.com/package/@aurabx/uploader-client} - Server-side HMAC signing for Node.js
  */
 
 import { hmacSha256, hmacSha256Raw, sha256, generateNonce } from "./crypto";

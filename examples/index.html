@@ -137,15 +137,6 @@
         font-size: 14px;
         color: #71717a;
       }
-      .step.active {
-        background: #dbeafe;
-        color: #1e40af;
-        font-weight: 500;
-      }
-      .step.complete {
-        background: #dcfce7;
-        color: #166534;
-      }
     </style>
   </head>
   <body>
@@ -164,7 +155,7 @@
           <br /><br />
           <strong>In production:</strong>
           <ul style="margin: 8px 0 0 0; padding-left: 20px;">
-            <li>Use <code>@aurabx/uploader-client</code> on your <strong>backend server</strong> for HMAC signing</li>
+            <li>Use <a href="https://www.npmjs.com/package/@aurabx/uploader-client" target="_blank"><code>@aurabx/uploader-client</code></a> on your <strong>backend server</strong> for HMAC signing</li>
             <li><strong>NEVER</strong> expose HMAC secrets to the browser</li>
             <li>Your backend exchanges credentials and sends only the upload token to your frontend</li>
           </ul>
@@ -181,7 +172,7 @@
         <h2>Step 1: Exchange HMAC Credentials for Upload Token</h2>
         <p style="color: #71717a; font-size: 14px; margin-top: 0">
           <strong>⚠️ DEMO ONLY:</strong> In production, this step happens on your
-          backend using <code>@aurabx/uploader-client</code>. The browser should
+          backend using <a href="https://www.npmjs.com/package/@aurabx/uploader-client" target="_blank"><code>@aurabx/uploader-client</code></a>. The browser should
           never see the HMAC secret. Your backend exchanges credentials and sends
           only the upload token to your frontend.
         </p>
@@ -214,7 +205,7 @@
         </div>
 
         <div class="form-group">
-          <label for="appSecret">HMAC Secret (⚠️ DEMO ONLY - use @aurabx/uploader-client on backend!)</label>
+          <label for="appSecret">HMAC Secret (⚠️ DEMO ONLY - use <a href="https://www.npmjs.com/package/@aurabx/uploader-client" target="_blank">@aurabx/uploader-client</a> on backend!)</label>
           <input
             type="password"
             id="appSecret"

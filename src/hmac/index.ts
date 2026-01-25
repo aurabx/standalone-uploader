@@ -9,9 +9,11 @@
  * This browser-compatible HMAC module is included for demonstration purposes.
  * In production:
  *
- * - Use `@aurabx/uploader-client` for server-side HMAC signing
+ * - Use {@link https://www.npmjs.com/package/@aurabx/uploader-client | @aurabx/uploader-client} for server-side HMAC signing
  * - NEVER expose HMAC secrets to the browser
  * - Your frontend should only receive ephemeral upload tokens
+ *
+ * @see {@link https://www.npmjs.com/package/@aurabx/uploader-client} - Server-side HMAC signing for Node.js
  *
  * @packageDocumentation
  */

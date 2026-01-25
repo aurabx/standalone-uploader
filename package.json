@@ -1,6 +1,6 @@
 {
   "name": "@aurabx/standalone-uploader",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Standalone DICOM uploader component for embedding in external applications",
   "type": "module",
   "main": "dist/standalone-auraloader.umd.js",
@@ -16,6 +16,9 @@
   "files": [
     "dist"
   ],
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "dev": "vite",
     "build": "vite build && tsc --declaration --outDir dist/types --emitDeclarationOnly",
@@ -29,7 +32,7 @@
     "aurabox"
   ],
   "author": "Aurabx",
-  "license": "UNLICENSED",
+  "license": "MIT",
   "packageManager": "pnpm@10.23.0",
   "devDependencies": {
     "@types/node": "^25.0.9",
@@ -49,5 +52,13 @@
     "axios": "^1.13.2",
     "dicom-parser": "^1.8.21",
     "uuid": "^13.0.0"
+  },
+  "peerDependencies": {
+    "@aurabx/uploader-client": "^1.0.0"
+  },
+  "peerDependenciesMeta": {
+    "@aurabx/uploader-client": {
+      "optional": true
+    }
   }
 }

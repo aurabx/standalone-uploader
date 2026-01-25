@@ -2,6 +2,8 @@
 
 A standalone DICOM uploader component for embedding in external applications. This package provides a complete, self-contained upload widget that handles DICOM file processing, validation, zipping, and upload via Tus (resumable) uploads.
 
+**This library is only required by (and can only be implemented by) Aurabox integration partners. Contact Aurabox for more information.**
+
 ## Table of Contents
 
 - [Installation](#installation)
