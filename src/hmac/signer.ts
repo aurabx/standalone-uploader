@@ -21,7 +21,6 @@
 import { hmacSha256, hmacSha256Raw, sha256, generateNonce } from "./crypto";
 import type {
   SignableRequest,
-  SignedRequestHeaders,
   HmacCredentials,
 } from "./types";
 import { ALGORITHM, SERVICE, REQUIRED_HEADERS } from "./types";
@@ -48,10 +47,10 @@ export class HmacSigner {
   private appSecret: string;
 
   constructor(appId: string, appSecret: string) {
-    if (!appId || typeof appId !== "string") {
+    if (!appId) {
       throw new Error("appId is required and must be a string");
     }
-    if (!appSecret || typeof appSecret !== "string") {
+    if (!appSecret) {
       throw new Error("appSecret is required and must be a string");
     }
 

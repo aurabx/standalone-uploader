@@ -34,7 +34,7 @@
  * @packageDocumentation
  */
 
-import type { AuraloaderConfig, StudyInfo, UploadResult } from "./types";
+import type { AuraloaderConfig} from "./types";
 import { ApiClient } from "./api/client";
 import { AuraloaderEngine } from "./core/AuraloaderEngine";
 import { Store } from "./ui/Store";
