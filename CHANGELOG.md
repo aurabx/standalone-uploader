@@ -29,13 +29,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Input validation and sanitization throughout
 
 ### API Endpoints Supported
-- `POST /standalone/auth/exchange` - Token exchange (backend only)
-- `GET /standalone/config` - Upload configuration
-- `POST /standalone/upload/init` - Initialize upload session
-- `POST /standalone/upload/start` - Mark upload started
-- `POST /standalone/upload/complete` - Mark upload complete
-- `POST /standalone/upload/error` - Report upload errors
-- `POST /standalone/upload/cancel` - Cancel upload
+- `POST /auth/exchange` - Token exchange (backend only)
+- `GET /uploader/config` - Upload configuration
+- `POST /uploader/upload/init` - Initialize upload session
+- `POST /uploader/upload/start` - Mark upload started
+- `POST /uploader/upload/complete` - Mark upload complete
+- `POST /uploader/upload/error` - Report upload errors
+- `POST /uploader/upload/cancel` - Cancel upload
 
 ### Browser Support
 - Modern browsers with ES2022 support

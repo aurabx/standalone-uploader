@@ -51,7 +51,7 @@ async function getUploadToken(req, res) {
 
   const config = {
     method: "POST",
-    url: "/standalone/auth/exchange",
+    url: "/auth/exchange",
     baseURL: "https://aura-instance.com/api",
     headers: {
       "Content-Type": "application/json",
@@ -266,7 +266,7 @@ The standalone uploader expects the following endpoints under your `apiBaseUrl`:
 
 #### Token Exchange (HMAC authenticated - backend only)
 
-`POST /standalone/auth/exchange` - Exchange HMAC credentials for upload token
+`POST /auth/exchange` - Exchange HMAC credentials for upload token
 
 - **Auth**: HMAC-signed request + Service API key via `X-Api-Key` header
 - **Body**:
@@ -290,7 +290,7 @@ The standalone uploader expects the following endpoints under your `apiBaseUrl`:
 
 #### Configuration Endpoint (Upload token authenticated - browser)
 
-`GET /standalone/config` - Returns upload configuration (Tus endpoint, credentials)
+`GET /uploader/config` - Returns upload configuration (Tus endpoint, credentials)
 
 - **Auth**: Upload token (scope: `integration:read`) + Service API key
 - **Headers**: `X-Api-Key: <service-api-key>`, `Authorization: Bearer <upload-token>`
@@ -309,7 +309,7 @@ The standalone uploader expects the following endpoints under your `apiBaseUrl`:
 
 #### Upload Lifecycle Endpoints (Upload token authenticated - browser)
 
-`POST /standalone/upload/init` - Initialize upload session
+`POST /uploader/upload/init` - Initialize upload session
 
 - **Auth**: Upload token (scope: `upload:init`) + Service API key
 - **Body**:
@@ -330,25 +330,25 @@ The standalone uploader expects the following endpoints under your `apiBaseUrl`:
   }
   ```
 
-`POST /standalone/upload/start` - Mark upload as started
+`POST /uploader/upload/start` - Mark upload as started
 
 - **Auth**: Upload token (scope: `upload:manage`) + Service API key
-- **Body**: `{ "upload_id": "...", "assembly_id": "...", "mode": "standalone" }`
+- **Body**: `{ "upload_id": "...", "assembly_id": "...", "mode": "uploader" }`
 
-`POST /standalone/upload/complete` - Mark upload as complete
-
-- **Auth**: Upload token (scope: `upload:manage`) + Service API key
-- **Body**: `{ "upload_id": "...", "assembly_id": "...", "mode": "standalone" }`
-
-`POST /standalone/upload/error` - Report upload error
+`POST /uploader/upload/complete` - Mark upload as complete
 
 - **Auth**: Upload token (scope: `upload:manage`) + Service API key
-- **Body**: `{ "upload_id": "...", "message": "error message", "mode": "standalone" }`
+- **Body**: `{ "upload_id": "...", "assembly_id": "...", "mode": "uploader" }`
 
-`POST /standalone/upload/cancel` - Cancel upload
+`POST /uploader/upload/error` - Report upload error
 
 - **Auth**: Upload token (scope: `upload:manage`) + Service API key
-- **Body**: `{ "upload_id": "...", "mode": "standalone" }`
+- **Body**: `{ "upload_id": "...", "message": "error message", "mode": "uploader" }`
+
+`POST /uploader/upload/cancel` - Cancel upload
+
+- **Auth**: Upload token (scope: `upload:manage`) + Service API key
+- **Body**: `{ "upload_id": "...", "mode": "uploader" }`
 
 **Rate limit**: 60 requests/minute for all upload lifecycle endpoints
 
@@ -378,7 +378,7 @@ app.post("/api/upload-token", async (req, res) => {
 
   const config = {
     method: "POST",
-    url: "/standalone/auth/exchange",
+    url: "/auth/exchange",
     baseURL: process.env.AURA_API_URL,
     headers: {
       "Content-Type": "application/json",

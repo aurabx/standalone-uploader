@@ -359,7 +359,7 @@
 
           const config = {
             method: "POST",
-            url: "/standalone/auth/exchange",
+            url: "/auth/exchange",
             baseURL: apiBaseUrl,
             headers: {
               "Content-Type": "application/json",
@@ -380,7 +380,7 @@
           delete requestHeaders.Host;
 
           const response = await fetch(
-            `${apiBaseUrl}/standalone/auth/exchange`,
+            `${apiBaseUrl}/auth/exchange`,
             {
               method: "POST",
               headers: requestHeaders,

@@ -6,7 +6,7 @@ import type {
 } from "../types";
 
 /**
- * API client for communicating with the Aura standalone endpoints.
+ * API client for communicating with the Aura uploader endpoints.
  * Uses ephemeral upload tokens for authentication (Bearer token).
  */
 export class ApiClient {
@@ -49,7 +49,7 @@ export class ApiClient {
    */
   async getConfig(): Promise<UploaderConfigResponse> {
     const response = await this.client.get<UploaderConfigResponse>(
-      "/standalone/config"
+      "/uploader/config"
     );
     return response.data;
   }
@@ -66,12 +66,12 @@ export class ApiClient {
     context?: Record<string, unknown>;
   }): Promise<UploadInitResponse> {
     const response = await this.client.post<UploadInitResponse>(
-      "/standalone/upload/init",
+      "/uploader/upload/init",
       {
         upload_id: data.upload_id,
         studies: data.studies,
         mode: "bulk",
-        type: "standalone",
+        type: "uploader",
         source: data.source || "standalone-uploader",
         patient_id: data.patient_id ?? null,
         context: data.context,
@@ -88,10 +88,10 @@ export class ApiClient {
     assembly_id?: string;
     mode?: string;
   }): Promise<void> {
-    await this.client.post("/standalone/upload/start", {
+    await this.client.post("/uploader/upload/start", {
       upload_id: data.upload_id,
       assembly_id: data.assembly_id,
-      mode: data.mode || "standalone",
+      mode: data.mode || "uploader",
     });
   }
 
@@ -103,10 +103,10 @@ export class ApiClient {
     assembly_id?: string;
     mode?: string;
   }): Promise<void> {
-    await this.client.post("/standalone/upload/complete", {
+    await this.client.post("/uploader/upload/complete", {
       upload_id: data.upload_id,
       assembly_id: data.assembly_id,
-      mode: data.mode || "standalone",
+      mode: data.mode || "uploader",
     });
   }
 
@@ -118,10 +118,10 @@ export class ApiClient {
     message: string;
     mode?: string;
   }): Promise<void> {
-    await this.client.post("/standalone/upload/error", {
+    await this.client.post("/uploader/upload/error", {
       upload_id: data.upload_id,
       message: data.message,
-      mode: data.mode || "standalone",
+      mode: data.mode || "uploader",
     });
   }
 
@@ -132,9 +132,9 @@ export class ApiClient {
     upload_id: string;
     mode?: string;
   }): Promise<void> {
-    await this.client.post("/standalone/upload/cancel", {
+    await this.client.post("/uploader/upload/cancel", {
       upload_id: data.upload_id,
-      mode: data.mode || "standalone",
+      mode: data.mode || "uploader",
     });
   }
 

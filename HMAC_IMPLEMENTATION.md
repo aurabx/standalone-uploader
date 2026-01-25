@@ -61,7 +61,7 @@ app_secret: string
 
 request.method: string            // e.g. "POST"
 request.base_url: string          // e.g. "https://aura.example.com/api" (optional)
-request.url: string               // e.g. "/standalone/auth/exchange" or full URL
+request.url: string               // e.g. "/auth/exchange" or full URL
 request.headers: map<string,string>
 request.query: map<string,string|number|bool>  // optional
 request.body: bytes|string|object|null         // optional
@@ -254,7 +254,7 @@ Partners typically use this signing flow only for token exchange:
 request = {
   method: "POST",
   base_url: AURA_API_URL,
-  url: "/standalone/auth/exchange",
+  url: "/auth/exchange",
   headers: {
     "X-Api-Key": SERVICE_API_KEY,
     "Host": parse_url(AURA_API_URL).host,
@@ -307,7 +307,7 @@ app_secret = "test-secret-key"
 
 ```
 method   = "POST"
-url      = "/api/standalone/auth/exchange"
+url      = "/api/auth/exchange"
 host     = "aura.example.com"
 body     = {"ttl":3600,"scopes":["upload:init","upload:manage"]}
 ```
@@ -352,7 +352,7 @@ signed_headers = "content-type;host;x-aura-nonce;x-aura-timestamp"
 canonical_headers = "content-type:application/json\nhost:aura.example.com\nx-aura-nonce:550e8400-e29b-41d4-a716-446655440000\nx-aura-timestamp:1706140800\n"
 
 // Canonical request (note: empty line for empty query string)
-canonical_request = "POST\n/api/standalone/auth/exchange\n\ncontent-type:application/json\nhost:aura.example.com\nx-aura-nonce:550e8400-e29b-41d4-a716-446655440000\nx-aura-timestamp:1706140800\n\ncontent-type;host;x-aura-nonce;x-aura-timestamp\n5335037164580247d5b44ecd0bafecaed26775a65e61c2fb867f39f97cbdd303"
+canonical_request = "POST\n/api/auth/exchange\n\ncontent-type:application/json\nhost:aura.example.com\nx-aura-nonce:550e8400-e29b-41d4-a716-446655440000\nx-aura-timestamp:1706140800\n\ncontent-type;host;x-aura-nonce;x-aura-timestamp\n5335037164580247d5b44ecd0bafecaed26775a65e61c2fb867f39f97cbdd303"
 
 // Canonical request hash
 canonical_request_hash = sha256_hex(canonical_request)
@@ -392,7 +392,7 @@ app_secret = "test-secret-key"
 
 ```
 method = "GET"
-url    = "/api/standalone/config"
+url    = "/api/uploader/config"
 host   = "aura.example.com"
 body   = (none)
 ```
@@ -425,7 +425,7 @@ signed_headers = "host;x-aura-nonce;x-aura-timestamp"
 canonical_headers = "host:aura.example.com\nx-aura-nonce:a1b2c3d4-e5f6-4a5b-8c7d-9e0f1a2b3c4d\nx-aura-timestamp:1706140800\n"
 
 // Canonical request
-canonical_request = "GET\n/api/standalone/config\n\nhost:aura.example.com\nx-aura-nonce:a1b2c3d4-e5f6-4a5b-8c7d-9e0f1a2b3c4d\nx-aura-timestamp:1706140800\n\nhost;x-aura-nonce;x-aura-timestamp\ne3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+canonical_request = "GET\n/api/uploader/config\n\nhost:aura.example.com\nx-aura-nonce:a1b2c3d4-e5f6-4a5b-8c7d-9e0f1a2b3c4d\nx-aura-timestamp:1706140800\n\nhost;x-aura-nonce;x-aura-timestamp\ne3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
 
 // Canonical request hash
 canonical_request_hash = "d94e35db6dae4d6a686981a8780c875c002e2be9cfdafef75cdab392617845b3"
@@ -446,7 +446,7 @@ Authorization: AURA-HMAC-SHA256 Credential=test-app-id,SignedHeaders=host;x-aura
 
 ```
 method = "POST"
-url    = "/api/standalone/upload/init?mode=bulk&source=test"
+url    = "/api/uploader/upload/init?mode=bulk&source=test"
 host   = "aura.example.com"
 body   = {"upload_id":"abc-123"}
 ```
@@ -466,7 +466,7 @@ date      = "20240125"
 canonical_query = "mode=bulk&source=test"
 
 // Canonical request includes sorted query
-canonical_request = "POST\n/api/standalone/upload/init\nmode=bulk&source=test\n<canonical_headers>\n<signed_headers>\n<payload_hash>"
+canonical_request = "POST\n/api/uploader/upload/init\nmode=bulk&source=test\n<canonical_headers>\n<signed_headers>\n<payload_hash>"
 ```
 
 ---
@@ -485,7 +485,7 @@ app_secret = "aura_sk_supersecretkey456"
 **Request**
 
 ```
-POST https://aura.example.com/api/standalone/auth/exchange
+POST https://aura.example.com/api/auth/exchange
 Host: aura.example.com
 Content-Type: application/json
 X-Api-Key: aura_au_myservice_abc123

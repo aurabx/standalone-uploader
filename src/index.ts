@@ -188,7 +188,7 @@ export class StandaloneAuraloader {
           showProgressDetails: true,
         },
         lift: serverConfig.lift,
-        mode: serverConfig.mode || "standalone",
+        mode: serverConfig.mode || "uploader",
       });
 
       // Setup Tus
@@ -268,7 +268,7 @@ export class StandaloneAuraloader {
         await this.apiClient.uploadStart({
           upload_id: this.engine?.uniqueId || "",
           assembly_id: uploadID,
-          mode: "standalone",
+          mode: "uploader",
         });
       } catch (error) {
         console.error("Failed to notify upload start:", error);
@@ -285,7 +285,7 @@ export class StandaloneAuraloader {
         await this.apiClient.uploadComplete({
           upload_id: this.engine?.uniqueId || "",
           assembly_id: assemblyId,
-          mode: "standalone",
+          mode: "uploader",
         });
 
         this.store.setComplete(true);
@@ -329,7 +329,7 @@ export class StandaloneAuraloader {
         await this.apiClient.uploadError({
           upload_id: this.engine?.uniqueId || "",
           message: error.message,
-          mode: "standalone",
+          mode: "uploader",
         });
       } catch (apiError) {
         console.error("Failed to report error:", apiError);
@@ -355,7 +355,7 @@ export class StandaloneAuraloader {
       try {
         await this.apiClient.uploadCancel({
           upload_id: this.engine?.uniqueId || "",
-          mode: "standalone",
+          mode: "uploader",
         });
       } catch (error) {
         console.error("Failed to notify cancel:", error);
@@ -450,7 +450,7 @@ export class StandaloneAuraloader {
       const result = await this.apiClient.uploadInit({
         upload_id: this.engine.uniqueId,
         studies: this.engine.studiesInfo,
-        mode: "standalone",
+        mode: "uploader",
         source: "standalone-uploader",
         patient_id: this.config.patientId,
         context: this.config.context,
