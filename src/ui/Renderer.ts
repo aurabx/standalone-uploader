@@ -109,6 +109,24 @@ export class Renderer {
         color: #dc2626;
         padding: 16px;
         border-radius: 8px;
+        margin-bottom: 16px;
+        border: 1px solid #fca5a5;
+      }
+      .sal-error-title {
+        font-size: 16px;
+        font-weight: 600;
+        margin: 0 0 8px 0;
+        color: #991b1b;
+      }
+      .sal-error-message {
+        font-size: 14px;
+        margin: 0 0 8px 0;
+        line-height: 1.5;
+      }
+      .sal-error-instructions {
+        font-size: 13px;
+        margin: 0;
+        color: #7f1d1d;
       }
       .sal-study-card {
         display: flex;
@@ -316,10 +334,21 @@ export class Renderer {
     `;
   }
 
+  private renderErrorMessage(state: UploaderState): string {
+    if (state.step !== 'error' || !state.errorMessage) return '';
+    return `
+      <div class="sal-error">
+        <p class="sal-error-title">Upload Error</p>
+        <p class="sal-error-message">${this.escapeHtml(state.errorMessage)}</p>
+        <p class="sal-error-instructions">Reload the page and try again. Please contact us if this error persists.</p>
+      </div>
+    `;
+  }
+
   private renderStep(state: UploaderState): string {
     switch (state.step) {
       case 'start':
-        return this.renderStartStep();
+        return this.renderStartStep(state);
       case 'processing':
         return this.renderProcessingStep();
       case 'pending':
@@ -329,11 +358,12 @@ export class Renderer {
       case 'complete':
         return this.renderCompleteStep(state);
       case 'error':
-        return this.renderErrorStep(state);
+        // Show the start step UI when there's an error, with error message after header
+        return this.renderStartStep(state);
       case 'cancelled':
         return this.renderCancelledStep();
       default:
-        return this.renderStartStep();
+        return this.renderStartStep(state);
     }
   }
 
@@ -346,10 +376,12 @@ export class Renderer {
     `;
   }
 
-  private renderStartStep(): string {
+  private renderStartStep(state?: UploaderState): string {
+    const isError = state?.step === 'error';
     return `
       ${this.renderHeader()}
-      <div id="sal-drag-drop-area" class="sal-drag-drop-area"></div>
+      ${state ? this.renderErrorMessage(state) : ''}
+      <div id="sal-drag-drop-area" class="sal-drag-drop-area ${isError ? 'sal-hidden' : ''}"></div>
     `;
   }
 
@@ -436,7 +468,10 @@ export class Renderer {
         ${this.renderHeader()}
         <p class="sal-status-message">${statusMessage}</p>
         <div id="sal-progress-area" class="sal-progress-area"></div>
-        <p class="sal-close-message">You may now close the uploader.</p>
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 16px;">
+          <p class="sal-close-message" style="margin: 0;">You may now close the uploader.</p>
+          <button class="sal-btn sal-btn-primary" id="sal-add-more-btn">Add more</button>
+        </div>
       `;
     }
 
@@ -457,14 +492,7 @@ export class Renderer {
     `;
   }
 
-  private renderErrorStep(state: UploaderState): string {
-    return `
-      <div class="sal-error">
-        <p style="font-size: 18px; font-weight: 500; margin-bottom: 8px;">Upload Error</p>
-        <p>${this.escapeHtml(state.errorMessage || 'An unknown error occurred.')}</p>
-      </div>
-    `;
-  }
+
 
   private renderCancelledStep(): string {
     return `
@@ -577,6 +605,14 @@ export class Renderer {
     const addMoreBtn = this.container.querySelector('.sal-add-more');
     if (addMoreBtn) {
       addMoreBtn.addEventListener('click', () => {
+        this.container.dispatchEvent(new CustomEvent('sal:reset'));
+      });
+    }
+
+    // Add more button (on uploading complete)
+    const addMoreUploadingBtn = this.container.querySelector('#sal-add-more-btn');
+    if (addMoreUploadingBtn) {
+      addMoreUploadingBtn.addEventListener('click', () => {
         this.container.dispatchEvent(new CustomEvent('sal:reset'));
       });
     }
