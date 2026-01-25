@@ -143,11 +143,12 @@ describe("HmacSigner", () => {
       expect(signatureMatch![1]).toHaveLength(64);
     });
 
-    it("sets Content-Type if not present", async () => {
+    it("sets Content-Type if not present for POST with data", async () => {
       const config: Record<string, unknown> = {
         method: "POST",
         url: "/api/test",
         headers: {},
+        data: { test: "data" },
       };
 
       await signer.sign(config as any);

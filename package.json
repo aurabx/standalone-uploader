@@ -18,7 +18,7 @@
   ],
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build",
+    "build": "vite build && tsc --declaration --outDir dist/types --emitDeclarationOnly",
     "typecheck": "tsc --noEmit",
     "preview": "vite preview"
   },
@@ -33,10 +33,12 @@
   "packageManager": "pnpm@10.23.0",
   "devDependencies": {
     "@types/node": "^25.0.9",
+    "@vitest/ui": "^4.0.18",
     "rollup-plugin-dts": "^6.3.0",
     "typescript": "^5.9.3",
     "vite": "^7.3.1",
-    "vite-plugin-css-injected-by-js": "^3.5.2"
+    "vite-plugin-css-injected-by-js": "^3.5.2",
+    "vitest": "^4.0.18"
   },
   "dependencies": {
     "@uppy/core": "^5.2.0",
