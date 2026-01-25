@@ -1,467 +1,538 @@
-# HMAC Authentication Implementation Guide
+# HMAC Authentication (AURA-HMAC-SHA256)
 
-This guide provides comprehensive information about the HMAC signing implementation and how partners should implement it on their backend.
+This document describes the **exact signing algorithm** used by Aura for server-to-server calls (for example, exchanging HMAC credentials for an upload token). It is written in pseudocode so it can be implemented in any backend language.
 
-## Overview
+If you are using a prebuilt Aura signer library, you should still read the **Inputs / Canonicalization** sections to avoid common integration failures (host mismatch, body mismatch, clock skew).
 
-The standalone uploader uses **AURA-HMAC-SHA256** authentication, which is compatible with AWS Signature Version 4 but customized for the Aura ecosystem. This ensures secure server-to-server communication while keeping HMAC secrets safely on the backend.
+## What This Is For
 
-## Architecture
+You sign a request to Aura by adding:
+
+- `X-Aura-Timestamp`: unix time in seconds (string)
+- `X-Aura-Nonce`: UUID v4 (string)
+- `Authorization`: HMAC signature header (string)
+
+Aura verifies the signature to ensure the request was created by a party that knows `app_secret`, and that the request was not modified in transit.
+
+## Required Request Headers
+
+You must send these headers on the request to Aura:
+
+- `X-Api-Key: <service_api_key>` (used for team/realm context)
+- `Host: <api host>` (must match your request target host)
+
+Additionally, if the request has a JSON body, send:
+
+- `Content-Type: application/json`
+
+Note: `X-Api-Key` is **not** included in the signature by our current signer; it is still required on the request.
+
+## Authorization Header Format
 
 ```
-┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
-│   Frontend     │    │    Backend      │    │   Aura API      │
-│ (Browser)      │    │  (Your Server)  │    │                │
-│                │    │                 │    │                │
-│  Upload Token  │◄──►│  HMAC Signer   │◄──►│ Token Exchange  │
-│    aubt_...    │    │                 │    │                │
-└─────────────────┘    └──────────────────┘    └─────────────────┘
+Authorization: AURA-HMAC-SHA256 Credential=<appId>,SignedHeaders=<signed_headers>,Signature=<signature_hex>
 ```
 
-## HMAC Signer Implementation Details
+Where:
 
-### Core Components
+- `signed_headers` is a `;`-separated list of lowercase header names
+- `signature_hex` is lowercase hex
 
-The `HmacSigner` class implements the AURA-HMAC-SHA256 protocol with these key components:
+## Constants
 
-#### 1. Request Canonicalization
-```typescript
-// Canonical Request Format:
-<HTTPMethod>
-<CanonicalURI>
-<CanonicalQueryString>
-<CanonicalHeaders>
-<SignedHeaders>
-<HashedPayload>
+```
+ALGORITHM = "AURA-HMAC-SHA256"
+SERVICE   = "aura_request"
+
+REQUIRED_SIGNED_HEADERS = [
+  "host",
+  "x-aura-nonce",
+  "x-aura-timestamp",
+]
 ```
 
-#### 2. String to Sign
-```typescript
-// String to Sign Format:
-AURA-HMAC-SHA256
-<Timestamp>
-<CredentialScope>
-<HashedCanonicalRequest>
+## Signing Algorithm (Pseudocode)
+
+### Input
+
+```
+app_id: string
+app_secret: string
+
+request.method: string            // e.g. "POST"
+request.base_url: string          // e.g. "https://aura.example.com/api" (optional)
+request.url: string               // e.g. "/standalone/auth/exchange" or full URL
+request.headers: map<string,string>
+request.query: map<string,string|number|bool>  // optional
+request.body: bytes|string|object|null         // optional
 ```
 
-#### 3. Key Derivation
-```typescript
-// Key Derivation Steps:
-date_key = HMAC-SHA256("AURA" + app_secret, "YYYYMMDD")
-signing_key = HMAC-SHA256(date_key, "aura_request")
+### Output
+
+Mutate `request.headers` by adding:
+
+```
+X-Aura-Timestamp
+X-Aura-Nonce
+Authorization
 ```
 
-### Authentication Headers
+### Steps
 
-Every signed request includes these required headers:
+```
+function sign_request(app_id, app_secret, request):
+  ts    = str(floor(now_ms() / 1000))
+  nonce = uuid_v4()
+  date  = utc_date_yyyymmdd(now_utc())
 
-| Header | Format | Example |
-|--------|---------|---------|
-| `X-Aura-Timestamp` | Unix timestamp in seconds | `1706150400` |
-| `X-Aura-Nonce` | UUID v4 | `550e8400-e29b-41d4-a716-446655440000` |
-| `Authorization` | Complete signature | `AURA-HMAC-SHA256 Credential=...,SignedHeaders=...,Signature=...` |
-| `X-Api-Key` | Service API key | `aura_au_standalone-uploader_...` |
+  // Ensure headers exist
+  if request.headers is null: request.headers = {}
 
-### Required Headers for Signing
+  // Required signing headers
+  request.headers["X-Aura-Timestamp"] = ts
+  request.headers["X-Aura-Nonce"]     = nonce
 
-These headers are **always** included in the signature:
-- `host` (HTTP Host header)
-- `x-aura-nonce` 
-- `x-aura-timestamp`
+  // If request has a body and Content-Type is missing, set it to JSON
+  method_upper = upper(request.method or "GET")
+  has_body = (method_upper in ["POST","PUT","PATCH"]) and (request.body is not null/undefined)
+  if has_body and not header_present(request.headers, "Content-Type"):
+    request.headers["Content-Type"] = "application/json"
 
-Additional headers signed when present:
-- `content-type` (when request has body)
+  canonical_path, canonical_query = canonicalize_url(request.base_url, request.url, request.query)
 
-## Backend Implementation Guide
+  payload_hash = hash_payload_sha256_hex(request.body)
 
-### Prerequisites
+  signed_headers = compute_signed_headers(request.headers)
+  canonical_headers = build_canonical_headers(request.headers, signed_headers)
 
-1. **Environment Variables** (Never expose to frontend):
-   ```bash
-   AURA_APP_ID=aura_pk_your-app-id
-   AURA_APP_SECRET=aura_sk_your-app-secret  
-   SERVICE_API_KEY=aura_au_standalone-uploader_your-service-key
-   AURA_API_URL=https://your-aura-instance.com/api
-   ```
+  canonical_request = join_with_newlines([
+    method_upper,
+    canonical_path,
+    canonical_query,
+    canonical_headers,  // must end with "\n"
+    signed_headers,     // e.g. "content-type;host;x-aura-nonce;x-aura-timestamp"
+    payload_hash,
+  ])
 
-2. **Install the Standalone Uploader**:
-   ```bash
-   npm install @aurabx/standalone-uploader
-   ```
+  canonical_request_hash = sha256_hex(utf8(canonical_request))
 
-### Node.js Implementation
+  credential_scope = app_id + "/" + date + "/" + SERVICE
+  string_to_sign = join_with_newlines([
+    ALGORITHM,
+    ts,
+    credential_scope,
+    canonical_request_hash,
+  ])
 
-```javascript
-import express from 'express';
-import { HmacSigner } from '@aurabx/standalone-uploader';
+  // Key derivation
+  date_key    = hmac_sha256_raw(key=utf8("AURA" + app_secret), data=utf8(date))
+  signing_key = hmac_sha256_raw(key=date_key, data=utf8(SERVICE))
 
-const app = express();
-app.use(express.json());
+  signature_hex = hmac_sha256_hex(key=signing_key, data=utf8(string_to_sign))
 
-// Endpoint to provide upload tokens to your frontend
-app.post('/api/upload-token', async (req, res) => {
-  try {
-    // 1. Authenticate your user session (your business logic)
-    if (!req.session.user) {
-      return res.status(401).json({ error: 'Unauthorized' });
-    }
+  request.headers["Authorization"] =
+    ALGORITHM + " " +
+    "Credential=" + app_id + "," +
+    "SignedHeaders=" + signed_headers + "," +
+    "Signature=" + signature_hex
 
-    // 2. Create HMAC signer with your credentials
-    const signer = new HmacSigner(
-      process.env.AURA_APP_ID,
-      process.env.AURA_APP_SECRET
-    );
+  return request
+```
 
-    // 3. Prepare token exchange request
-    const config = {
-      method: 'POST',
-      url: '/standalone/auth/exchange',
-      baseURL: process.env.AURA_API_URL,
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Api-Key': process.env.SERVICE_API_KEY,
-        'Host': new URL(process.env.AURA_API_URL).host
-      },
-      data: {
-        ttl: 3600, // 1 hour token lifetime
-        scopes: ['upload:init', 'upload:manage', 'integration:read'],
-        max_uses: 100 // Optional: limit token usage
-      }
-    };
+## Helper Functions (Pseudocode)
 
-    // 4. Sign the request with HMAC
-    await signer.sign(config);
+### Header Presence / Normalization
 
-    // 5. Exchange HMAC credentials for upload token
-    const response = await fetch(`${config.baseURL}${config.url}`, {
-      method: config.method,
-      headers: config.headers,
-      body: JSON.stringify(config.data)
-    });
+```
+function header_present(headers, name):
+  // case-insensitive
+  for each k in headers.keys:
+    if lower(k) == lower(name): return true
+  return false
 
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error?.message || 'Token exchange failed');
-    }
+function normalize_header_value(v):
+  // trim and collapse whitespace
+  return collapse_whitespace(trim(v))
+```
 
-    const tokenData = await response.json();
+### Signed Headers
 
-    // 6. Return upload token to frontend
-    res.json({
-      token: tokenData.token,
-      expires_at: tokenData.expires_at,
-      scopes: tokenData.scopes
-    });
+```
+function compute_signed_headers(headers):
+  signed = set(REQUIRED_SIGNED_HEADERS)
+  if header_present(headers, "Content-Type"):
+    signed.add("content-type")
 
-  } catch (error) {
-    console.error('Token exchange failed:', error);
-    res.status(500).json({ 
-      error: 'Failed to generate upload token' 
-    });
+  // Only include headers that have a non-empty value
+  signed_nonempty = []
+  for each h in signed:
+    v = get_header_case_insensitive(headers, h)
+    if normalize_header_value(v) != "":
+      signed_nonempty.push(h)
+
+  sort(signed_nonempty)
+  return join(";", signed_nonempty)
+
+function build_canonical_headers(headers, signed_headers_str):
+  signed_list = split(signed_headers_str, ";")
+  // signed_list is already sorted
+  lines = []
+  for each h in signed_list:
+    v = get_header_case_insensitive(headers, h)
+    lines.push(h + ":" + normalize_header_value(v))
+  return join("\n", lines) + "\n"  // NOTE: trailing newline
+```
+
+### URL Canonicalization
+
+This matches our signer behavior:
+
+- If `base_url` is provided, its path is prepended to a relative `request.url`
+- Query parameters are sorted lexicographically
+- Path is normalized (`.` / `..`) and percent-encoded per segment
+
+```
+function canonicalize_url(base_url, url, query_map):
+  // Step 1: build effective path+query
+  // - if url is absolute, ignore base_url
+  // - else, join base_url.pathname + url
+  effective_path, effective_query_string = resolve_path_and_query(base_url, url)
+
+  // Step 2: merge query_map into query string
+  if query_map not empty:
+    q2 = build_query_string(query_map)   // encode keys/values
+    effective_query_string = merge_query_strings(effective_query_string, q2)
+
+  // Step 3: sort query string
+  canonical_query = sort_query_string(effective_query_string)  // "a=1&b=2" sorted by pair
+
+  // Step 4: canonicalize path
+  canonical_path = canonicalize_path(effective_path)
+
+  return canonical_path, canonical_query
+
+function canonicalize_path(path):
+  if path is empty: path = "/"
+  if not starts_with(path, "/"): path = "/" + path
+
+  path = normalize_dot_segments(path)            // resolve "." and ".."
+  segments = split(path, "/")
+  encoded_segments = []
+  for each seg in segments:
+    // decode then encode to prevent double-encoding
+    encoded_segments.push(percent_encode(decode_percent(seg)))
+  result = join("/", encoded_segments)
+  if not starts_with(result, "/"): result = "/" + result
+  return result
+```
+
+### Payload Hashing
+
+Important: you must hash **exactly what you send** on the wire.
+
+```
+function hash_payload_sha256_hex(body):
+  if body is null/undefined/empty_string:
+    return sha256_hex(utf8(""))
+
+  if body is bytes:
+    return sha256_hex(body)
+
+  if body is string:
+    return sha256_hex(utf8(body))
+
+  // otherwise treat as object and JSON-serialize
+  json = json_stringify(body)          // language default
+  return sha256_hex(utf8(json))
+```
+
+## Token Exchange Call (Pseudocode)
+
+Partners typically use this signing flow only for token exchange:
+
+```
+request = {
+  method: "POST",
+  base_url: AURA_API_URL,
+  url: "/standalone/auth/exchange",
+  headers: {
+    "X-Api-Key": SERVICE_API_KEY,
+    "Host": parse_url(AURA_API_URL).host,
+    "Content-Type": "application/json",
+  },
+  body: {
+    ttl: 3600,
+    scopes: ["upload:init", "upload:manage", "integration:read"],
   }
-});
-```
-
-### Python Implementation
-
-```python
-import hashlib
-import hmac
-import json
-import requests
-import time
-import uuid
-from datetime import datetime
-from urllib.parse import urlencode, urlparse
-
-class AuraHmacSigner:
-    def __init__(self, app_id, app_secret):
-        self.app_id = app_id
-        self.app_secret = app_secret
-        self.algorithm = "AURA-HMAC-SHA256"
-        self.service = "aura_request"
-    
-    def sign(self, config):
-        """Sign a request configuration"""
-        timestamp = str(int(time.time()))
-        nonce = str(uuid.uuid4())
-        date = datetime.now().strftime('%Y%m%d')
-        
-        # Add required headers
-        headers = config.get('headers', {})
-        headers['X-Aura-Timestamp'] = timestamp
-        headers['X-Aura-Nonce'] = nonce
-        
-        # Set content-type for requests with body
-        method = config.get('method', 'GET').upper()
-        data = config.get('data')
-        if method in ['POST', 'PUT', 'PATCH'] and data and 'content-type' not in headers:
-            headers['Content-Type'] = 'application/json'
-        
-        # Build canonical request
-        canonical = self._build_canonical_request(config, headers)
-        
-        # Build string to sign
-        credential_scope = f"{self.app_id}/{date}/{self.service}"
-        hashed_canonical = hashlib.sha256(canonical.encode()).hexdigest()
-        string_to_sign = f"{self.algorithm}\n{timestamp}\n{credential_scope}\n{hashed_canonical}"
-        
-        # Derive signing key
-        signing_key = self._derive_signing_key(date)
-        
-        # Compute signature
-        signature = hmac.new(
-            signing_key, 
-            string_to_sign.encode(), 
-            hashlib.sha256
-        ).hexdigest()
-        
-        # Build signed headers list
-        signed_headers = self._get_signed_headers(headers)
-        
-        # Set authorization header
-        headers['Authorization'] = f"{self.algorithm} Credential={self.app_id},SignedHeaders={signed_headers},Signature={signature}"
-        config['headers'] = headers
-    
-    def _derive_signing_key(self, date):
-        """Derive signing key from secret and date"""
-        date_key = hmac.new(
-            f"AURA{self.app_secret}".encode(), 
-            date.encode(), 
-            hashlib.sha256
-        ).digest()
-        
-        return hmac.new(
-            date_key, 
-            self.service.encode(), 
-            hashlib.sha256
-        ).digest()
-    
-    def _build_canonical_request(self, config, headers):
-        """Build canonical request string"""
-        method = config.get('method', 'GET').upper()
-        url = config['url']
-        
-        # Parse URL (simplified)
-        path = '/' + url.split('/')[-1] if '/' not in url else url
-        query_string = ''
-        
-        # Build canonical headers
-        canonical_headers = self._build_canonical_headers(headers)
-        signed_headers = self._get_signed_headers(headers)
-        
-        # Hash payload
-        payload_hash = hashlib.sha256(
-            json.dumps(config.get('data', ''), separators=(',', ':')).encode()
-        ).hexdigest()
-        
-        return f"{method}\n{path}\n{query_string}\n{canonical_headers}\n{signed_headers}\n{payload_hash}"
-    
-    def _build_canonical_headers(self, headers):
-        """Build canonical headers string"""
-        required_headers = ['host', 'x-aura-nonce', 'x-aura-timestamp']
-        if 'content-type' in headers:
-            required_headers.append('content-type')
-        
-        canonical = {}
-        for key, value in headers.items():
-            if key.lower() in required_headers:
-                canonical[key.lower()] = value.strip()
-        
-        # Sort and format
-        sorted_headers = sorted(canonical.items())
-        return '\n'.join(f"{key}:{value}" for key, value in sorted_headers) + '\n'
-    
-    def _get_signed_headers(self, headers):
-        """Get signed headers list"""
-        required_headers = ['host', 'x-aura-nonce', 'x-aura-timestamp']
-        if 'content-type' in headers:
-            required_headers.append('content-type')
-        
-        return ';'.join(sorted(required_headers))
-
-# Usage
-app = Flask(__name__)
-
-@app.route('/api/upload-token', methods=['POST'])
-def get_upload_token():
-    # Your user authentication logic here
-    if not session.get('user'):
-        return jsonify({'error': 'Unauthorized'}), 401
-    
-    signer = AuraHmacSigner(
-        app.config['AURA_APP_ID'],
-        app.config['AURA_APP_SECRET']
-    )
-    
-    config = {
-        'method': 'POST',
-        'url': '/standalone/auth/exchange',
-        'baseURL': app.config['AURA_API_URL'],
-        'headers': {
-            'Content-Type': 'application/json',
-            'X-Api-Key': app.config['SERVICE_API_KEY']
-        },
-        'data': {
-            'ttl': 3600,
-            'scopes': ['upload:init', 'upload:manage', 'integration:read']
-        }
-    }
-    
-    signer.sign(config)
-    
-    response = requests.post(
-        f"{config['baseURL']}{config['url']}",
-        headers=config['headers'],
-        json=config['data']
-    )
-    
-    if response.status_code != 200:
-        return jsonify({'error': 'Token exchange failed'}), 500
-    
-    token_data = response.json()
-    return jsonify(token_data)
-```
-
-## Security Best Practices
-
-### 1. **Never Expose Secrets to Frontend**
-```javascript
-// ❌ NEVER do this in browser:
-const signer = new HmacSigner(appId, appSecret);
-
-// ✅ ALWAYS do this on backend:
-const signer = new HmacSigner(
-  process.env.AURA_APP_ID,     // Environment variable
-  process.env.AURA_APP_SECRET   // Environment variable  
-);
-```
-
-### 2. **Validate User Sessions**
-Always authenticate your users before issuing upload tokens:
-```javascript
-// Your business logic first
-if (!req.session.user || !req.session.user.isAuthenticated) {
-  return res.status(401).json({ error: 'Unauthorized' });
 }
 
-// Then issue token
-const token = await generateUploadToken();
+sign_request(AURA_APP_ID, AURA_APP_SECRET, request)
+
+response = http_send(request)
+return response.json()
 ```
 
-### 3. **Use Appropriate Token Scopes**
-- `integration:read` - Get upload configuration
-- `upload:init` - Initialize upload sessions  
-- `upload:manage` - Start/complete/cancel uploads
+## Common Failure Modes
 
-### 4. **Set Reasonable Token TTL**
-```javascript
-data: {
-  ttl: 3600,        // 1 hour (recommended)
-  scopes: [...],      // Minimum required scopes
-  max_uses: 100      // Optional: limit usage
-}
+- Host mismatch: you signed `Host=aura.example.com` but actually sent `Host=proxy.example.com`.
+- JSON mismatch: you signed one JSON serialization but sent different bytes.
+- Clock skew: timestamps too far from Aura server time.
+- Missing signed headers: `Host` not present at signing time.
+
+## Debugging Tip
+
+When debugging 401/403 from Aura, log these values (do not log secrets):
+
+- `canonical_request`
+- `string_to_sign`
+- `signed_headers`
+- request method + full URL + headers actually sent
+
+---
+
+## Test Vectors
+
+Use these test vectors to validate your signing implementation. All intermediate values are provided so you can pinpoint where your implementation diverges.
+
+### Test Vector 1: POST with JSON body
+
+**Credentials**
+
+```
+app_id     = "test-app-id"
+app_secret = "test-secret-key"
 ```
 
-### 5. **Implement Rate Limiting**
-```javascript
-// Example rate limiting on your token endpoint
-import rateLimit from 'express-rate-limit';
+**Request (before signing)**
 
-const tokenLimiter = rateLimit({
-  windowMs: 60 * 1000,  // 1 minute
-  max: 10,               // 10 requests per minute per user
-  keyGenerator: (req) => req.session.userId
-});
-
-app.post('/api/upload-token', tokenLimiter, getUploadToken);
+```
+method   = "POST"
+url      = "/api/standalone/auth/exchange"
+host     = "aura.example.com"
+body     = {"ttl":3600,"scopes":["upload:init","upload:manage"]}
 ```
 
-## API Endpoints Reference
+**Fixed values (normally generated)**
 
-### Token Exchange
 ```
-POST /standalone/auth/exchange
-Headers: X-Api-Key, Authorization (HMAC signed)
-Body: { ttl, scopes, max_uses? }
-Response: { token, expires_at, scopes }
-Rate Limit: 10 requests/minute
+timestamp = "1706140800"
+nonce     = "550e8400-e29b-41d4-a716-446655440000"
+date      = "20240125"
 ```
 
-### Required Headers
-- `X-Api-Key`: Service API key for team/realm identification
-- `Authorization`: HMAC signature in format: `AURA-HMAC-SHA256 Credential=...,SignedHeaders=...,Signature=...`
-- `X-Aura-Timestamp`: Unix timestamp (must be within 5 minutes)
-- `X-Aura-Nonce`: Unique UUID per request (prevents replay attacks)
+**Headers before signing**
 
-## Troubleshooting
-
-### Common Errors
-
-1. **403 Forbidden** - Invalid HMAC signature
-   - Check clock synchronization (timestamps must be within ±5 minutes)
-   - Verify app ID and secret are correct
-   - Ensure Host header is included in signature
-
-2. **401 Unauthorized** - Invalid API key or token
-   - Verify Service API key is valid
-   - Check token hasn't expired
-   - Ensure token has required scopes
-
-3. **429 Too Many Requests** - Rate limited
-   - Implement exponential backoff
-   - Check token endpoint rate limits (10/minute)
-   - Consider increasing TTL to reduce frequency
-
-### Debugging
-
-Enable debug logging to see canonical request and string to sign:
-
-```javascript
-// For debugging, add to your signer:
-console.log('Canonical Request:', canonical);
-console.log('String to Sign:', stringToSign);
-console.log('Signing Key:', signingKey);
+```
+Host: aura.example.com
+Content-Type: application/json
 ```
 
-## Integration Checklist
+**Headers after signing (added)**
 
-- [ ] Store HMAC credentials in environment variables
-- [ ] Implement user authentication before token exchange
-- [ ] Use appropriate token scopes and TTL
-- [ ] Implement rate limiting on token endpoint  
-- [ ] Add error handling and logging
-- [ ] Test with production Aura endpoint
-- [ ] Validate token expiration handling
-- [ ] Implement proper security headers
-
-## Testing Your Implementation
-
-### Unit Test Example
-```javascript
-import { HmacSigner } from '@aurabx/standalone-uploader';
-
-describe('HMAC Implementation', () => {
-  test('should sign request correctly', async () => {
-    const signer = new HmacSigner('test-app-id', 'test-app-secret');
-    
-    const config = {
-      method: 'POST',
-      url: '/standalone/auth/exchange',
-      baseURL: 'https://api.aura.com',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      data: { ttl: 3600, scopes: ['upload:init'] }
-    };
-    
-    await signer.sign(config);
-    
-    expect(config.headers['Authorization']).toMatch(/^AURA-HMAC-SHA256/);
-    expect(config.headers['X-Aura-Timestamp']).toBeDefined();
-    expect(config.headers['X-Aura-Nonce']).toBeDefined();
-  });
-});
+```
+X-Aura-Timestamp: 1706140800
+X-Aura-Nonce: 550e8400-e29b-41d4-a716-446655440000
+Authorization: AURA-HMAC-SHA256 Credential=test-app-id,SignedHeaders=content-type;host;x-aura-nonce;x-aura-timestamp,Signature=<see below>
 ```
 
-This comprehensive guide should enable partners to implement secure HMAC authentication correctly while maintaining security best practices.
+**Intermediate values**
+
+```
+// Body bytes (no extra whitespace)
+body_string = '{"ttl":3600,"scopes":["upload:init","upload:manage"]}'
+
+// Payload hash
+payload_hash = sha256_hex(body_string)
+             = "5335037164580247d5b44ecd0bafecaed26775a65e61c2fb867f39f97cbdd303"
+
+// Signed headers (sorted, semicolon-separated)
+signed_headers = "content-type;host;x-aura-nonce;x-aura-timestamp"
+
+// Canonical headers (sorted, colon-separated, trailing newline)
+canonical_headers = "content-type:application/json\nhost:aura.example.com\nx-aura-nonce:550e8400-e29b-41d4-a716-446655440000\nx-aura-timestamp:1706140800\n"
+
+// Canonical request (note: empty line for empty query string)
+canonical_request = "POST\n/api/standalone/auth/exchange\n\ncontent-type:application/json\nhost:aura.example.com\nx-aura-nonce:550e8400-e29b-41d4-a716-446655440000\nx-aura-timestamp:1706140800\n\ncontent-type;host;x-aura-nonce;x-aura-timestamp\n5335037164580247d5b44ecd0bafecaed26775a65e61c2fb867f39f97cbdd303"
+
+// Canonical request hash
+canonical_request_hash = sha256_hex(canonical_request)
+                       = "887ab1575bee5565fb640a266a685549fe23f0365536f476b61924e964baf6cb"
+
+// Credential scope
+credential_scope = "test-app-id/20240125/aura_request"
+
+// String to sign
+string_to_sign = "AURA-HMAC-SHA256\n1706140800\ntest-app-id/20240125/aura_request\n887ab1575bee5565fb640a266a685549fe23f0365536f476b61924e964baf6cb"
+
+// Key derivation
+date_key    = hmac_sha256_raw(key="AURAtest-secret-key", data="20240125")
+signing_key = hmac_sha256_raw(key=date_key, data="aura_request")
+
+// Final signature
+signature = hmac_sha256_hex(key=signing_key, data=string_to_sign)
+          = "e8462b1ff170baa7c2aa9af6f512d41eab13e5d36bde5d40b3c098af206f5a6f"
+```
+
+**Expected Authorization header**
+
+```
+Authorization: AURA-HMAC-SHA256 Credential=test-app-id,SignedHeaders=content-type;host;x-aura-nonce;x-aura-timestamp,Signature=e8462b1ff170baa7c2aa9af6f512d41eab13e5d36bde5d40b3c098af206f5a6f
+```
+
+### Test Vector 2: GET without body
+
+**Credentials**
+
+```
+app_id     = "test-app-id"
+app_secret = "test-secret-key"
+```
+
+**Request**
+
+```
+method = "GET"
+url    = "/api/standalone/config"
+host   = "aura.example.com"
+body   = (none)
+```
+
+**Fixed values**
+
+```
+timestamp = "1706140800"
+nonce     = "a1b2c3d4-e5f6-4a5b-8c7d-9e0f1a2b3c4d"
+date      = "20240125"
+```
+
+**Headers before signing**
+
+```
+Host: aura.example.com
+```
+
+**Intermediate values**
+
+```
+// No body → hash of empty string
+payload_hash = sha256_hex("")
+             = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+
+// Signed headers (no content-type for GET)
+signed_headers = "host;x-aura-nonce;x-aura-timestamp"
+
+// Canonical headers
+canonical_headers = "host:aura.example.com\nx-aura-nonce:a1b2c3d4-e5f6-4a5b-8c7d-9e0f1a2b3c4d\nx-aura-timestamp:1706140800\n"
+
+// Canonical request
+canonical_request = "GET\n/api/standalone/config\n\nhost:aura.example.com\nx-aura-nonce:a1b2c3d4-e5f6-4a5b-8c7d-9e0f1a2b3c4d\nx-aura-timestamp:1706140800\n\nhost;x-aura-nonce;x-aura-timestamp\ne3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+
+// Canonical request hash
+canonical_request_hash = "d94e35db6dae4d6a686981a8780c875c002e2be9cfdafef75cdab392617845b3"
+
+// Final signature
+signature = "463e4d074c8d3c1dd6a18f09c322ff699ea08fceb6aa65419cf8df59710712a1"
+```
+
+**Expected Authorization header**
+
+```
+Authorization: AURA-HMAC-SHA256 Credential=test-app-id,SignedHeaders=host;x-aura-nonce;x-aura-timestamp,Signature=463e4d074c8d3c1dd6a18f09c322ff699ea08fceb6aa65419cf8df59710712a1
+```
+
+### Test Vector 3: POST with query parameters
+
+**Request**
+
+```
+method = "POST"
+url    = "/api/standalone/upload/init?mode=bulk&source=test"
+host   = "aura.example.com"
+body   = {"upload_id":"abc-123"}
+```
+
+**Fixed values**
+
+```
+timestamp = "1706140800"
+nonce     = "11111111-2222-3333-4444-555555555555"
+date      = "20240125"
+```
+
+**Intermediate values**
+
+```
+// Query string is sorted alphabetically
+canonical_query = "mode=bulk&source=test"
+
+// Canonical request includes sorted query
+canonical_request = "POST\n/api/standalone/upload/init\nmode=bulk&source=test\n<canonical_headers>\n<signed_headers>\n<payload_hash>"
+```
+
+---
+
+## Reference Request
+
+This is a complete, concrete example you can use to test your implementation end-to-end.
+
+**Credentials**
+
+```
+app_id     = "aura_pk_testapp123"
+app_secret = "aura_sk_supersecretkey456"
+```
+
+**Request**
+
+```
+POST https://aura.example.com/api/standalone/auth/exchange
+Host: aura.example.com
+Content-Type: application/json
+X-Api-Key: aura_au_myservice_abc123
+
+{"ttl":3600,"scopes":["upload:init","upload:manage","integration:read"]}
+```
+
+**Use these fixed values for reproducibility**
+
+```
+timestamp = "1706184000"
+nonce     = "f47ac10b-58cc-4372-a567-0e02b2c3d479"
+date      = "20240125"
+```
+
+**Intermediate values**
+
+```
+// Body
+body_string = '{"ttl":3600,"scopes":["upload:init","upload:manage","integration:read"]}'
+
+// Payload hash
+payload_hash = "3aff517eea808aa374890ccf5a9345750a1e5d3abe35d61a27bde24168014b26"
+
+// Canonical request hash
+canonical_request_hash = "a232b96ddec6bbca2324af28d32472626841ec29d6d82f496c4a0e82cacdc76a"
+
+// Credential scope
+credential_scope = "aura_pk_testapp123/20240125/aura_request"
+
+// Final signature
+signature = "e675cc3c898d218247eb590ee5b4b1727f6ab3dc80c39195c20c8e342c88642c"
+```
+
+**Expected Authorization header**
+
+```
+Authorization: AURA-HMAC-SHA256 Credential=aura_pk_testapp123,SignedHeaders=content-type;host;x-aura-nonce;x-aura-timestamp,Signature=e675cc3c898d218247eb590ee5b4b1727f6ab3dc80c39195c20c8e342c88642c
+```
+
+**Validation steps**
+
+1. Compute `payload_hash = sha256_hex('{"ttl":3600,"scopes":["upload:init","upload:manage","integration:read"]}')`
+2. Build `canonical_request` with the exact format shown above
+3. Build `string_to_sign`
+4. Derive `signing_key` from `"AURA" + app_secret` → date → service
+5. Compute `signature = hmac_sha256_hex(signing_key, string_to_sign)`
+6. Compare your signature with `e675cc3c898d218247eb590ee5b4b1727f6ab3dc80c39195c20c8e342c88642c`
+
+If your signature matches, your implementation is correct. If not, compare each intermediate value to find where your implementation diverges.
