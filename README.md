@@ -2,6 +2,17 @@
 
 A standalone DICOM uploader component for embedding in external applications. This package provides a complete, self-contained upload widget that handles DICOM file processing, validation, zipping, and upload via Tus (resumable) uploads.
 
+## Table of Contents
+
+- [Installation](#installation)
+- [Authentication Flow](#authentication-flow)
+- [HMAC Implementation Guide](#hmac-implementation-guide)
+- [Usage](#usage)
+- [API](#api)
+- [Backend Requirements](#backend-requirements)
+- [Security Best Practices](#security-best-practices)
+- [Development](#development)
+
 ## Installation
 
 ### Via npm/pnpm
@@ -171,6 +182,35 @@ await uploader.mount();
 </script>
 ```
 
+## HMAC Implementation Guide
+
+📖 **For comprehensive implementation details, see [HMAC_IMPLEMENTATION.md](./HMAC_IMPLEMENTATION.md)**
+
+### Quick Reference
+
+The AURA-HMAC-SHA256 protocol requires:
+
+1. **Required Headers** (always signed):
+   - `X-Aura-Timestamp` - Unix timestamp (seconds)
+   - `X-Aura-Nonce` - UUID v4 per request
+   - `Authorization` - Complete HMAC signature
+
+2. **Key Components**:
+   - Request canonicalization (AWS Signature V4 compatible)
+   - String to sign: `ALGORITHM\\nTIMESTAMP\\nCREDENTIAL_SCOPE\\nHASHED_REQUEST`
+   - Key derivation: `date_key → signing_key`
+
+3. **Security Rules**:
+   - ✅ HMAC secrets NEVER exposed to browser
+   - ✅ User authentication before token issuance
+   - ✅ Rate limiting on token exchange (10/minute)
+   - ✅ Appropriate token TTL and scopes
+
+4. **Implementation Options**:
+   - Node.js: Use built-in `HmacSigner` class
+   - Python/Java/Go: Implement AURA-HMAC-SHA256 protocol
+   - See detailed guide for complete examples
+
 ## Configuration
 
 | Option        | Type     | Required | Description                                   |
@@ -314,13 +354,17 @@ The standalone uploader expects the following endpoints under your `apiBaseUrl`:
 
 ### Your Backend Implementation
 
-You need to implement an endpoint to exchange HMAC credentials for upload tokens:
+You need to implement an endpoint to exchange HMAC credentials for upload tokens.
+
+📖 **For complete implementation details, see [HMAC_IMPLEMENTATION.md](./HMAC_IMPLEMENTATION.md)**
+
+Here's a simplified Node.js example:
 
 ```javascript
 // Example: /api/upload-token
 import { HmacSigner } from "@aurabx/standalone-uploader";
 
-app.get("/api/upload-token", async (req, res) => {
+app.post("/api/upload-token", async (req, res) => {
   // 1. Authenticate your user session
   if (!req.session.user) {
     return res.status(401).json({ error: "Unauthorized" });
@@ -366,6 +410,12 @@ app.get("/api/upload-token", async (req, res) => {
   res.json({ token, expires_at, scopes });
 });
 ```
+
+**Key Implementation Points:**
+- ✅ HMAC secrets stay on backend (never exposed to browser)
+- ✅ User authentication before token issuance  
+- ✅ Proper error handling and rate limiting
+- ✅ Use of appropriate scopes and TTL
 
 ## Security Best Practices
 
