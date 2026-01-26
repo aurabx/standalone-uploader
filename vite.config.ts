@@ -6,6 +6,10 @@ export default defineConfig({
   plugins: [
     cssInjectedByJsPlugin(),
   ],
+  // Dev server configuration for running examples
+  server: {
+    open: '/examples/index.html',
+  },
   build: {
     lib: {
       entry: resolve(__dirname, 'src/index.ts'),

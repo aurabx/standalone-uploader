@@ -23,7 +23,8 @@
     "dev": "vite",
     "build": "vite build && tsc --declaration --outDir dist/types --emitDeclarationOnly",
     "typecheck": "tsc --noEmit",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "example": "vite preview --open /examples/index.html"
   },
   "keywords": [
     "dicom",

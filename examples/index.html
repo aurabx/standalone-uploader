@@ -116,6 +116,44 @@
         word-break: break-all;
         margin-top: 8px;
       }
+      .status {
+        padding: 12px;
+        border-radius: 6px;
+        margin-top: 12px;
+        font-size: 14px;
+      }
+      .status.success {
+        background: #d1fae5;
+        border: 1px solid #10b981;
+        color: #065f46;
+      }
+      .status.error {
+        background: #fee2e2;
+        border: 1px solid #ef4444;
+        color: #991b1b;
+      }
+      .status.info {
+        background: #dbeafe;
+        border: 1px solid #3b82f6;
+        color: #1e40af;
+      }
+      .token-result {
+        background: #d1fae5;
+        border: 1px solid #10b981;
+        border-radius: 6px;
+        padding: 16px;
+        margin-top: 16px;
+      }
+      .token-result label {
+        color: #065f46;
+        font-weight: 500;
+        display: block;
+        margin-bottom: 8px;
+      }
+      .token-result .token-display {
+        background: #ecfdf5;
+        border-color: #10b981;
+      }
       code {
         background: #f4f4f5;
         padding: 2px 6px;
@@ -183,6 +221,8 @@
             type="text"
             id="apiBaseUrl"
             placeholder="https://your-aura-instance.com/api"
+            data-1p-ignore
+            autocomplete="off"
           />
         </div>
 
@@ -192,6 +232,8 @@
             type="text"
             id="serviceApiKey1"
             placeholder="aura_au_standalone-uploader_..."
+            data-1p-ignore
+            autocomplete="off"
           />
         </div>
 
@@ -201,6 +243,8 @@
             type="text"
             id="appPublicKey"
             placeholder="aura_pk_..."
+            data-1p-ignore
+            autocomplete="off"
           />
         </div>
 
@@ -210,6 +254,8 @@
             type="password"
             id="appSecret"
             placeholder="aura_sk_..."
+            data-1p-ignore
+            autocomplete="off"
           />
         </div>
 
@@ -218,9 +264,9 @@
         </button>
         <div id="tokenStatus"></div>
 
-        <div id="tokenResultDiv" style="display: none">
-          <div class="form-group" style="margin-top: 20px">
-            <label>Upload Token (Valid for 1 hour)</label>
+        <div id="tokenResultDiv" class="token-result" style="display: none">
+          <div class="form-group" style="margin: 0">
+            <label>✓ Upload Token (Valid for 1 hour)</label>
             <div class="token-display" id="tokenDisplay"></div>
           </div>
         </div>
@@ -240,17 +286,32 @@
             type="text"
             id="serviceApiKey"
             placeholder="aura_au_standalone-uploader_..."
+            data-1p-ignore
+            autocomplete="off"
           />
         </div>
 
         <div class="form-group">
           <label for="uploadToken">Upload Token (from Step 1)</label>
-          <input type="text" id="uploadToken" placeholder="aubt_..." readonly />
+          <input
+            type="text"
+            id="uploadToken"
+            placeholder="aubt_..."
+            readonly
+            data-1p-ignore
+            autocomplete="off"
+          />
         </div>
 
         <div class="form-group">
           <label for="patientId">Patient ID (optional)</label>
-          <input type="text" id="patientId" placeholder="e.g., PAT-12345" />
+          <input
+            type="text"
+            id="patientId"
+            placeholder="e.g., PAT-12345"
+            data-1p-ignore
+            autocomplete="off"
+          />
         </div>
 
         <div class="form-group">
