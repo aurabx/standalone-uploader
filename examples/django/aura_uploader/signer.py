@@ -85,7 +85,9 @@ class AuraHmacSigner:
         if nonce is None:
             nonce = str(uuid.uuid4())
         
-        date = datetime.now(timezone.utc).strftime("%Y%m%d")
+        # CRITICAL: Derive date from the timestamp, not current time
+        # The server uses the timestamp header to derive the date for key derivation
+        date = datetime.utcfromtimestamp(int(timestamp)).strftime("%Y%m%d")
         
         # Ensure headers dict exists
         if request.headers is None:
