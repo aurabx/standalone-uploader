@@ -17,6 +17,12 @@ A standalone DICOM uploader component for embedding in external applications. Th
 
 ## Installation
 
+### Via npx skills add
+
+```bash
+npx skills add https://github.com/aurabx/skills
+```
+
 ### Via npm/pnpm
 
 ```bash

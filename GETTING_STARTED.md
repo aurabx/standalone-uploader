@@ -105,12 +105,17 @@ Once your backend can issue upload tokens, embed the uploader in your frontend.
 
 ### Installation
 
-**Option A: npm/pnpm**
+**Option A: npx skills add**
+```bash
+npx skills add https://github.com/aurabx/skills
+```
+
+**Option B: npm/pnpm**
 ```bash
 pnpm add @aurabx/standalone-uploader
 ```
 
-**Option B: Script tag**
+**Option C: Script tag**
 ```html
 <script src="https://your-cdn.com/standalone-auraloader.umd.js"></script>
 ```
