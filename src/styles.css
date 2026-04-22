@@ -197,32 +197,49 @@
 .uppy-StatusBar-actions {
   display: flex;
   align-items: center;
+  gap: 8px;
   position: absolute;
   top: 0;
   bottom: 0;
-  right: 10px;
+  right: 0;
   z-index: 1004;
 }
 .uppy-StatusBar-actionCircleBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
   line-height: 1;
   cursor: pointer;
-  margin: 3px;
-  opacity: 0.9;
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  color: #4b5563;
+  transition: background-color 0.15s, border-color 0.15s, color 0.15s, box-shadow 0.15s;
 }
 .uppy-StatusBar-actionCircleBtn:focus {
   outline: none;
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
 }
 .uppy-StatusBar-actionCircleBtn::-moz-focus-inner {
   border: 0;
 }
-.uppy-StatusBar-actionCircleBtn:focus {
-  box-shadow: 0 0 0 3px rgba(34, 117, 215, 0.5);
-}
 .uppy-StatusBar-actionCircleBtn:hover {
-  opacity: 1;
+  background: #e5e7eb;
+  border-color: #d1d5db;
+  color: #1f2937;
 }
 .uppy-StatusBar-actionCircleBtn svg {
-  vertical-align: bottom;
+  vertical-align: middle;
+  width: 14px;
+  height: 14px;
+  fill: currentColor;
+}
+.uppy-StatusBar-actionCircleBtn svg circle {
+  display: none;
 }
 .uppy-StatusBar-actionBtn {
   display: inline-block;

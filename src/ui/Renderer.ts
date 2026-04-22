@@ -82,8 +82,58 @@ export class Renderer {
       }
       .sal-status-message {
         font-size: 14px;
-        color: #059669;
+        font-weight: 500;
+        color: #047857;
         margin: 16px 0;
+      }
+      .sal-success {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        background-color: #ecfdf5;
+        border: 1px solid #a7f3d0;
+        color: #065f46;
+        padding: 16px;
+        border-radius: 8px;
+        margin: 16px 0;
+      }
+      .sal-success-icon {
+        flex-shrink: 0;
+        width: 20px;
+        height: 20px;
+        color: #059669;
+        margin-top: 1px;
+      }
+      .sal-success-body {
+        flex: 1;
+        min-width: 0;
+      }
+      .sal-success-title {
+        font-size: 14px;
+        font-weight: 600;
+        color: #065f46;
+        margin: 0 0 2px 0;
+      }
+      .sal-success-subtitle {
+        font-size: 13px;
+        color: #047857;
+        margin: 0;
+      }
+      .sal-link {
+        display: inline-block;
+        background: none;
+        border: none;
+        padding: 0;
+        color: #6366f1;
+        font-size: 14px;
+        font-weight: 500;
+        text-decoration: none;
+        cursor: pointer;
+        font-family: inherit;
+      }
+      .sal-link:hover {
+        text-decoration: underline;
+        color: #4f46e5;
       }
       .sal-loader {
         width: 48px;
@@ -105,28 +155,44 @@ export class Renderer {
         margin-bottom: 16px;
       }
       .sal-error {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
         background-color: #fef2f2;
-        color: #dc2626;
+        color: #991b1b;
         padding: 16px;
         border-radius: 8px;
         margin-bottom: 16px;
-        border: 1px solid #fca5a5;
+        border: 1px solid #fecaca;
+      }
+      .sal-error-icon {
+        flex-shrink: 0;
+        width: 20px;
+        height: 20px;
+        color: #dc2626;
+        margin-top: 1px;
+      }
+      .sal-error-body {
+        flex: 1;
+        min-width: 0;
       }
       .sal-error-title {
-        font-size: 16px;
+        font-size: 14px;
         font-weight: 600;
-        margin: 0 0 8px 0;
+        margin: 0 0 4px 0;
         color: #991b1b;
       }
       .sal-error-message {
-        font-size: 14px;
-        margin: 0 0 8px 0;
+        font-size: 13px;
+        margin: 0 0 4px 0;
         line-height: 1.5;
+        color: #7f1d1d;
       }
       .sal-error-instructions {
         font-size: 13px;
         margin: 0;
-        color: #7f1d1d;
+        color: #991b1b;
+        opacity: 0.85;
       }
       .sal-study-card {
         display: flex;
@@ -136,7 +202,13 @@ export class Renderer {
         border: 1px solid #e5e7eb;
         background: white;
         padding: 16px 20px;
-        margin-bottom: 16px;
+        margin-bottom: 12px;
+        box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+        transition: border-color 0.15s, box-shadow 0.15s;
+      }
+      .sal-study-card:hover {
+        border-color: #d1d5db;
+        box-shadow: 0 1px 3px rgba(16, 24, 40, 0.08);
       }
       .sal-study-info {
         flex: 1;
@@ -191,9 +263,15 @@ export class Renderer {
       .sal-btn-primary {
         background: #6366f1;
         color: white;
+        box-shadow: 0 1px 2px rgba(99, 102, 241, 0.2);
       }
       .sal-btn-primary:hover:not(:disabled) {
         background: #4f46e5;
+        box-shadow: 0 2px 4px rgba(79, 70, 229, 0.25);
+      }
+      .sal-btn-primary:focus-visible {
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.35);
       }
       .sal-btn-secondary {
         background: #f3f4f6;
@@ -337,10 +415,15 @@ export class Renderer {
   private renderErrorMessage(state: UploaderState): string {
     if (state.step !== 'error' || !state.errorMessage) return '';
     return `
-      <div class="sal-error">
-        <p class="sal-error-title">Upload Error</p>
-        <p class="sal-error-message">${this.escapeHtml(state.errorMessage)}</p>
-        <p class="sal-error-instructions">Reload the page and try again. Please contact us if this error persists.</p>
+      <div class="sal-error" role="alert">
+        <svg class="sal-error-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+          <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+        </svg>
+        <div class="sal-error-body">
+          <p class="sal-error-title">Upload error</p>
+          <p class="sal-error-message">${this.escapeHtml(state.errorMessage)}</p>
+          <p class="sal-error-instructions">Reload the page and try again. Please contact us if this error persists.</p>
+        </div>
       </div>
     `;
   }
@@ -464,14 +547,19 @@ export class Renderer {
     }
 
     if (state.complete) {
+      const successText = `Successfully uploaded ${state.totalFiles} image${state.totalFiles !== 1 ? 's' : ''} to Aurabox`;
       return `
         ${this.renderHeader()}
-        <p class="sal-status-message">${statusMessage}</p>
-        <div id="sal-progress-area" class="sal-progress-area"></div>
-        <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 16px;">
-          <p class="sal-close-message" style="margin: 0;">You may now close the uploader.</p>
-          <button class="sal-btn sal-btn-primary" id="sal-add-more-btn">Add more</button>
+        <div class="sal-success" role="status">
+          <svg class="sal-success-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+          </svg>
+          <div class="sal-success-body">
+            <p class="sal-success-title">${this.escapeHtml(successText)}</p>
+            <p class="sal-success-subtitle">You may now close the uploader.</p>
+          </div>
         </div>
+        <button class="sal-link" id="sal-add-more-btn" type="button">Add more</button>
       `;
     }
 
