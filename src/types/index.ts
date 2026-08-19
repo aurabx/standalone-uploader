@@ -44,6 +44,32 @@ export type UploaderStep =
   | "cancelled"; // Upload cancelled
 
 /**
+ * Phase within the processing step, in the order they occur.
+ */
+export type ProcessPhase =
+  | 'preparing'
+  | 'reading'
+  | 'validating'
+  | 'summarising';
+
+/**
+ * Outcome for a single file processed during the reading phase.
+ */
+export type ProcessOutcome = 'accepted' | 'skipped' | 'rejected' | 'failed';
+
+/**
+ * Progress payload emitted by the engine while processing files.
+ */
+export interface ProcessProgress {
+  current: number;
+  total: number;
+  phase: ProcessPhase;
+  outcome?: ProcessOutcome;
+  fileName?: string;
+  reason?: string;
+}
+
+/**
  * Internal state for the uploader
  */
 export interface UploaderState {
@@ -57,6 +83,16 @@ export interface UploaderState {
   zipping: boolean;
   errorMessage: string;
   connectionIssues: boolean;
+  processingPhase: ProcessPhase;
+  processingCurrent: number;
+  processingTotal: number;
+  processingAccepted: number;
+  processingSkipped: number;
+  processingRejected: number;
+  processingFailed: number;
+  processingStalled: boolean;
+  processingErrors: Array<{ file: string; reason: string }>;
+  processingErrorsShown: boolean;
 }
 
 /**

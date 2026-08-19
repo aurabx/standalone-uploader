@@ -1,6 +1,13 @@
-import type { UploaderState, StudyInfo } from '../types';
+import type { UploaderState, StudyInfo, ProcessPhase } from '../types';
 import { Store } from './Store';
 import { formatName, formatDate, formatModalities } from '../core/dicom';
+
+const PROCESS_PHASE_LABELS: Record<ProcessPhase, string> = {
+  preparing: 'Preparing files',
+  reading: 'Reading imaging',
+  validating: 'Checking studies',
+  summarising: 'Building summary',
+};
 
 /**
  * UI Renderer for the standalone uploader.
@@ -357,6 +364,63 @@ export class Renderer {
         margin-top: 16px;
         font-weight: 500;
       }
+      .sal-processing {
+        margin: 32px 0;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+      .sal-processing-heading {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-size: 14px;
+        font-weight: 500;
+        color: #3f3f46;
+      }
+      .sal-processing-counter {
+        color: #6b7280;
+        font-variant-numeric: tabular-nums;
+      }
+      .sal-processing-tally {
+        font-size: 12px;
+        color: #6b7280;
+      }
+      .sal-processing-stalled {
+        font-size: 12px;
+        color: #b45309;
+      }
+      .sal-processing-errors {
+        margin-top: 4px;
+      }
+      .sal-processing-errors-toggle {
+        background: none;
+        border: none;
+        padding: 0;
+        font: inherit;
+        font-size: 12px;
+        color: #4f46e5;
+        cursor: pointer;
+      }
+      .sal-processing-errors-toggle:hover {
+        text-decoration: underline;
+      }
+      .sal-processing-errors-list {
+        list-style: none;
+        margin: 8px 0 0 0;
+        padding: 0;
+        font-size: 12px;
+        color: #52525b;
+      }
+      .sal-processing-errors-list li {
+        padding: 2px 0;
+      }
+      .sal-processing-error-file {
+        font-weight: 500;
+      }
+      .sal-processing-error-reason {
+        color: #6b7280;
+      }
       .sal-hidden { display: none !important; }
       .sal-complete-section {
         padding: 24px;
@@ -433,7 +497,7 @@ export class Renderer {
       case 'start':
         return this.renderStartStep(state);
       case 'processing':
-        return this.renderProcessingStep();
+        return this.renderProcessingStep(state);
       case 'pending':
         return this.renderPendingStep(state);
       case 'uploading':
@@ -468,12 +532,56 @@ export class Renderer {
     `;
   }
 
-  private renderProcessingStep(): string {
+  private renderProcessingStep(state?: UploaderState): string {
+    const s = state ?? this.store.getState();
+    const total = s.processingTotal;
+    const current = s.processingCurrent;
+    const percent = total > 0 ? Math.round((current / total) * 100) : 0;
+    const phaseLabel = PROCESS_PHASE_LABELS[s.processingPhase] ?? 'Processing files';
+    const skipped = s.processingSkipped + s.processingRejected;
+    const showTally = total > 0;
+    const showCounter = total > 0;
+    const showErrors = s.processingErrors.length > 0;
+
+    const errorsList = showErrors
+      ? `
+        <div class="sal-processing-errors">
+          <button type="button" id="sal-toggle-processing-errors" class="sal-processing-errors-toggle">
+            ${s.processingErrorsShown ? 'Hide skipped files' : 'Show skipped files'}
+          </button>
+          ${
+            s.processingErrorsShown
+              ? `<ul class="sal-processing-errors-list">
+                  ${s.processingErrors
+                    .map(
+                      (entry) =>
+                        `<li><span class="sal-processing-error-file">${this.escapeHtml(entry.file)}</span> — <span class="sal-processing-error-reason">${this.escapeHtml(entry.reason)}</span></li>`
+                    )
+                    .join('')}
+                </ul>`
+              : ''
+          }
+        </div>
+      `
+      : '';
+
     return `
       ${this.renderHeader()}
-      <div class="sal-center">
-        <div class="sal-loader"></div>
-        <div class="sal-center-message">Processing files...</div>
+      <div class="sal-processing">
+        <div class="sal-processing-heading">
+          <span class="sal-processing-phase">${this.escapeHtml(phaseLabel)}</span>
+          ${showCounter ? `<span class="sal-processing-counter">${current} / ${total}</span>` : ''}
+        </div>
+        <div class="sal-progress-bar">
+          <div class="sal-progress-fill" style="width: ${percent}%"></div>
+        </div>
+        ${
+          showTally
+            ? `<div class="sal-processing-tally">${s.processingAccepted} accepted · ${skipped} skipped · ${s.processingFailed} unreadable</div>`
+            : ''
+        }
+        ${s.processingStalled ? `<div class="sal-processing-stalled">Still working — large files can take a while.</div>` : ''}
+        ${errorsList}
       </div>
     `;
   }
@@ -603,6 +711,10 @@ export class Renderer {
       leftButtons.push(`<button class="sal-btn sal-btn-secondary" id="sal-cancel-upload-btn">Cancel Upload</button>`);
     }
 
+    if (state.step === 'processing') {
+      leftButtons.push(`<button class="sal-btn sal-btn-secondary" id="sal-cancel-processing-btn">Cancel</button>`);
+    }
+
     // Try again buttons
     if (state.step === 'pending' && state.totalFiles < 1) {
       rightButtons.push(`<button class="sal-btn sal-btn-primary" id="sal-reset-btn">Try Again</button>`);
@@ -670,6 +782,20 @@ export class Renderer {
     if (cancelUploadBtn) {
       cancelUploadBtn.addEventListener('click', () => {
         this.container.dispatchEvent(new CustomEvent('sal:cancelUpload'));
+      });
+    }
+
+    const cancelProcessingBtn = this.container.querySelector('#sal-cancel-processing-btn');
+    if (cancelProcessingBtn) {
+      cancelProcessingBtn.addEventListener('click', () => {
+        this.container.dispatchEvent(new CustomEvent('sal:cancelProcessing'));
+      });
+    }
+
+    const toggleErrorsBtn = this.container.querySelector('#sal-toggle-processing-errors');
+    if (toggleErrorsBtn) {
+      toggleErrorsBtn.addEventListener('click', () => {
+        this.container.dispatchEvent(new CustomEvent('sal:toggleProcessingErrors'));
       });
     }
 

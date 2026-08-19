@@ -275,10 +275,26 @@ export const dicomShouldReject = async (
 };
 
 /**
+ * Maximum bytes read from a DICOM file for metadata parsing.
+ *
+ * Why: reading the whole file into a single ArrayBuffer fails for very large
+ * files (e.g. multi-frame video DICOM > ~2 GB) because browsers cap
+ * ArrayBuffer allocations. Only the header (up to and including the pixel
+ * data element tag) is needed to extract patient/study/series metadata; the
+ * upload of the full file is handled separately by the tus plugin, which
+ * streams it in chunks.
+ */
+const DICOM_HEADER_MAX_BYTES = 20 * 1024 * 1024;
+
+/**
  * Read a file as ArrayBuffer for DICOM parsing
  */
 export const readDicom = (file: File | Blob): Promise<ArrayBuffer> => {
   const reader = new FileReader();
+  const slice =
+    file.size > DICOM_HEADER_MAX_BYTES
+      ? file.slice(0, DICOM_HEADER_MAX_BYTES)
+      : file;
 
   return new Promise((resolve, reject) => {
     reader.onerror = () => {
@@ -296,7 +312,7 @@ export const readDicom = (file: File | Blob): Promise<ArrayBuffer> => {
       resolve(reader.result as ArrayBuffer);
     };
 
-    reader.readAsArrayBuffer(file);
+    reader.readAsArrayBuffer(slice);
   });
 };
 

@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- Determinate progress UI for the file-processing step: phase label, `current / total` counter, progress bar, live tally of accepted / skipped / unreadable files, and an expandable list of the first ten unreadable files with reasons
+- Cancel button during processing that aborts the parsing loop and returns to the drop zone
+- Stall watchdog that surfaces a "Still working — large files can take a while" hint after 20 seconds without progress
+- New `ProcessPhase`, `ProcessOutcome`, and `ProcessProgress` types exported from the public API; new processing fields on `UploaderState`
+- New DOM events on the container element: `sal:cancelProcessing`, `sal:toggleProcessingErrors`
+
+### Changed
+- `AuraloaderEngine.process()` now accepts an `onProgress` callback, classifies each file (accepted / skipped / rejected / failed), and yields to the browser every 25 files so the UI can repaint and cancel stays responsive
+- Processing no longer waits an artificial 500 ms before starting
+- When every selected file is skipped, rejected, or unreadable the uploader routes to an explicit error state with a clear message instead of the empty "no images" screen
+
+### Fixed
+- Files larger than ~2 GB no longer fail with `NotReadableError` during DICOM parsing. `readDicom` now reads only the first 20 MB of a file and parses up to the PixelData tag, which is enough for metadata extraction; the full file is still uploaded in chunks by tus
+
 ## [1.0.1] - 2026-04-22
 
 ### Changed

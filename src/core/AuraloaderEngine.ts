@@ -13,7 +13,12 @@ import {
   dicomMap,
   dicomRejects,
 } from './dicom';
-import type { StudyInfo, UploaderConfigResponse } from '../types';
+import type {
+  StudyInfo,
+  UploaderConfigResponse,
+  ProcessProgress,
+  ProcessOutcome,
+} from '../types';
 
 // Uppy CSS - bundled into the JS output
 import '../styles.css';
@@ -82,6 +87,7 @@ export class AuraloaderEngine {
   uniqueId = '';
   config: EngineConfig;
   connectionIssues = false;
+  cancelProcessing = false;
 
   constructor(config: EngineConfig) {
     this.uniqueId = uuidv4();
@@ -209,39 +215,86 @@ export class AuraloaderEngine {
   }
 
   /**
-   * Process all files in the queue
+   * Iterate every file that Uppy is holding, extract DICOM metadata, and
+   * emit per-file progress via onProgress. The loop yields to the browser
+   * every YIELD_EVERY files so the UI can repaint the progress bar and the
+   * user can hit Cancel.
    */
-  async process(): Promise<void> {
-    for await (const file of this.uppy.getFiles()) {
-      await this.processFile(file);
+  async process(onProgress?: (progress: ProcessProgress) => void): Promise<void> {
+    this.cancelProcessing = false;
+
+    const files = this.uppy.getFiles();
+    const total = files.length;
+    const YIELD_EVERY = 25;
+
+    onProgress?.({ current: 0, total, phase: 'preparing' });
+
+    let index = 0;
+    for await (const file of files) {
+      if (this.cancelProcessing) {
+        throw new DOMException('Processing cancelled by user', 'AbortError');
+      }
+
+      const result = await this.processFile(file);
+      index += 1;
+
+      onProgress?.({
+        current: index,
+        total,
+        phase: 'reading',
+        outcome: result.outcome,
+        fileName: file.name,
+        reason: result.reason,
+      });
+
+      if (index % YIELD_EVERY === 0) {
+        await new Promise((resolve) => setTimeout(resolve, 0));
+      }
     }
+
+    onProgress?.({ current: total, total, phase: 'summarising' });
   }
 
   /**
-   * Process a single file
+   * Process a single file and return the outcome so the caller can
+   * aggregate a tally.
    */
-  async processFile(file: UppyFile<FileMeta, Body>): Promise<void> {
+  async processFile(
+    file: UppyFile<FileMeta, Body>
+  ): Promise<{ outcome: ProcessOutcome; reason?: string }> {
     if (!file.data) {
       this.uppy.removeFile(file.id);
-      return;
+      return { outcome: 'failed', reason: 'File has no data' };
     }
-    const arrayBuffer = await readDicom(file.data as Blob);
+
+    let arrayBuffer: ArrayBuffer;
+    try {
+      arrayBuffer = await readDicom(file.data as Blob);
+    } catch (err) {
+      this.uppy.removeFile(file.id);
+      return {
+        outcome: 'failed',
+        reason: (err as Error)?.message ?? 'Could not read file',
+      };
+    }
 
     let dataSet: DataSet;
     try {
       const byteArray = new Uint8Array(arrayBuffer);
-      dataSet = dicomParser.parseDicom(byteArray);
+      // Stop at the PixelData tag: metadata lives before it, and the
+      // buffer may be a truncated header slice for very large files.
+      dataSet = dicomParser.parseDicom(byteArray, { untilTag: 'x7fe00010' });
 
       // Skip DICOMDIR files
       if (file?.name === 'DICOMDIR') {
         this.uppy.removeFile(file.id);
-        return;
+        return { outcome: 'skipped', reason: 'DICOMDIR index' };
       }
 
       // Validate file
       if (!(await this.validFile(dataSet))) {
         this.uppy.removeFile(file.id);
-        return;
+        return { outcome: 'rejected', reason: 'Filtered by DICOM rules' };
       }
 
       // Log warnings
@@ -253,10 +306,14 @@ export class AuraloaderEngine {
     } catch (err) {
       console.debug('Failed to parse file as DICOM:', file.name);
       this.uppy.removeFile(file.id);
-      return;
+      return {
+        outcome: 'failed',
+        reason: (err as Error)?.message ?? 'Not a readable DICOM file',
+      };
     }
 
     await this.formatFile(file, dataSet);
+    return { outcome: 'accepted' };
   }
 
   /**
@@ -362,6 +419,7 @@ export class AuraloaderEngine {
    * Reset the engine
    */
   async reset(): Promise<void> {
+    this.cancelProcessing = false;
     this.uppy.cancelAll();
     await this.resetCounts();
   }

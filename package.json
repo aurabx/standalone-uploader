@@ -24,7 +24,7 @@
     "build": "vite build && tsc --declaration --outDir dist/types --emitDeclarationOnly",
     "typecheck": "tsc --noEmit",
     "preview": "vite preview",
-    "example": "vite preview --open /examples/index.html"
+    "example": "npm run build && vite --open /examples/index.html"
   },
   "keywords": [
     "dicom",

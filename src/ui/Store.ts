@@ -1,4 +1,10 @@
-import type { UploaderState, UploaderStep, StudyInfo, AuraloaderCallbacks } from '../types';
+import type {
+  UploaderState,
+  UploaderStep,
+  StudyInfo,
+  AuraloaderCallbacks,
+  ProcessProgress,
+} from '../types';
 import { formatName, formatDate, formatModalities } from '../core/dicom';
 
 export type StateListener = (state: UploaderState) => void;
@@ -29,6 +35,31 @@ export class Store {
       zipping: false,
       errorMessage: '',
       connectionIssues: false,
+      processingPhase: 'preparing',
+      processingCurrent: 0,
+      processingTotal: 0,
+      processingAccepted: 0,
+      processingSkipped: 0,
+      processingRejected: 0,
+      processingFailed: 0,
+      processingStalled: false,
+      processingErrors: [],
+      processingErrorsShown: false,
+    };
+  }
+
+  private getInitialProcessingState(): Partial<UploaderState> {
+    return {
+      processingPhase: 'preparing',
+      processingCurrent: 0,
+      processingTotal: 0,
+      processingAccepted: 0,
+      processingSkipped: 0,
+      processingRejected: 0,
+      processingFailed: 0,
+      processingStalled: false,
+      processingErrors: [],
+      processingErrorsShown: false,
     };
   }
 
@@ -137,6 +168,62 @@ export class Store {
    */
   setConnectionIssues(hasIssues: boolean): void {
     this.setState({ connectionIssues: hasIssues });
+  }
+
+  /**
+   * Reset only the processing sub-state (leaves step/studies/etc. alone).
+   */
+  resetProcessing(): void {
+    this.setState(this.getInitialProcessingState());
+  }
+
+  /**
+   * Apply a progress tick emitted by the engine.
+   */
+  applyProcessingProgress(progress: ProcessProgress): void {
+    const patch: Partial<UploaderState> = {
+      processingCurrent: progress.current,
+      processingTotal: progress.total,
+      processingPhase: progress.phase,
+      processingStalled: false,
+    };
+
+    if (progress.outcome === 'accepted') {
+      patch.processingAccepted = this.state.processingAccepted + 1;
+    } else if (progress.outcome === 'skipped') {
+      patch.processingSkipped = this.state.processingSkipped + 1;
+    } else if (progress.outcome === 'rejected') {
+      patch.processingRejected = this.state.processingRejected + 1;
+    } else if (progress.outcome === 'failed') {
+      patch.processingFailed = this.state.processingFailed + 1;
+      if (this.state.processingErrors.length < 10 && progress.fileName) {
+        patch.processingErrors = [
+          ...this.state.processingErrors,
+          {
+            file: progress.fileName,
+            reason: progress.reason ?? 'Could not read file',
+          },
+        ];
+      }
+    }
+
+    this.setState(patch);
+  }
+
+  /**
+   * Flag or clear the "processing appears stalled" indicator.
+   */
+  markProcessingStalled(state = true): void {
+    this.setState({ processingStalled: state });
+  }
+
+  /**
+   * Toggle whether the skipped-file list is expanded in the UI.
+   */
+  toggleProcessingErrors(): void {
+    this.setState({
+      processingErrorsShown: !this.state.processingErrorsShown,
+    });
   }
 
   /**

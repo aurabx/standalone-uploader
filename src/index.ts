@@ -80,6 +80,12 @@ export class StandaloneAuraloader {
   private renderer: Renderer | null = null;
   private initialized = false;
 
+  // Stall watchdog for the processing step.
+  private static readonly STALL_TICK_MS = 5000;
+  private static readonly STALL_LIMIT_MS = 20000;
+  private lastProgressAt = 0;
+  private stallTimer: ReturnType<typeof setInterval> | null = null;
+
   constructor(config: AuraloaderConfig) {
     this.validateConfig(config);
     this.config = config;
@@ -297,13 +303,43 @@ export class StandaloneAuraloader {
         return;
       }
 
+      this.store.resetProcessing();
       this.store.goto("processing");
+      this.startStallWatchdog();
 
-      setTimeout(async () => {
-        await this.engine?.process();
-        this.buildSummary();
-        this.store.goto("pending");
-      }, 500);
+      try {
+        await this.engine?.process((progress) => {
+          this.stallTick();
+          this.store.applyProcessingProgress(progress);
+        });
+      } catch (err) {
+        this.stopStallWatchdog();
+        if ((err as Error)?.name === "AbortError") {
+          // User cancelled during processing — drop everything and go back
+          // to the drop zone so they can start over.
+          await this.engine?.reset();
+          this.store.reset();
+          return;
+        }
+        console.error("Processing failed:", err);
+        this.store.setError((err as Error)?.message ?? "Processing failed");
+        return;
+      }
+
+      this.stopStallWatchdog();
+      this.buildSummary();
+
+      if ((this.engine?.totalFiles ?? 0) === 0) {
+        const state = this.store.getState();
+        this.store.setError(
+          state.processingFailed > 0
+            ? "None of the selected files could be read as DICOM imaging."
+            : "None of the selected files are valid DICOM imaging."
+        );
+        return;
+      }
+
+      this.store.goto("pending");
     });
 
     // Upload started
@@ -438,6 +474,16 @@ export class StandaloneAuraloader {
       this.cancel();
     });
 
+    // Cancel processing (during the DICOM-parsing step)
+    container.addEventListener("sal:cancelProcessing", () => {
+      this.cancelProcessing();
+    });
+
+    // Toggle skipped-files details in the processing step
+    container.addEventListener("sal:toggleProcessingErrors", () => {
+      this.store.toggleProcessingErrors();
+    });
+
     // Reset
     container.addEventListener("sal:reset", () => {
       this.reset();
@@ -532,6 +578,39 @@ export class StandaloneAuraloader {
   async cancel(): Promise<void> {
     if (!this.engine) return;
     this.engine.uppy.cancelAll();
+  }
+
+  /**
+   * Cancel a running processing pass. Signals the engine's inner loop to
+   * throw AbortError, which the files-added handler catches and turns into
+   * a clean reset back to the drop zone.
+   */
+  cancelProcessing(): void {
+    if (!this.engine) return;
+    this.engine.cancelProcessing = true;
+  }
+
+  private startStallWatchdog(): void {
+    this.stopStallWatchdog();
+    this.lastProgressAt = Date.now();
+    this.stallTimer = setInterval(() => {
+      const idle = Date.now() - this.lastProgressAt;
+      if (idle > StandaloneAuraloader.STALL_LIMIT_MS) {
+        this.store.markProcessingStalled(true);
+      }
+    }, StandaloneAuraloader.STALL_TICK_MS);
+  }
+
+  private stopStallWatchdog(): void {
+    if (this.stallTimer) {
+      clearInterval(this.stallTimer);
+      this.stallTimer = null;
+    }
+    this.store.markProcessingStalled(false);
+  }
+
+  private stallTick(): void {
+    this.lastProgressAt = Date.now();
   }
 
   /**
