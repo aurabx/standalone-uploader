@@ -24,7 +24,11 @@
     "build": "vite build && tsc --declaration --outDir dist/types --emitDeclarationOnly",
     "typecheck": "tsc --noEmit",
     "preview": "vite preview",
-    "example": "npm run build && vite --open /examples/index.html"
+    "example": "npm run build && vite --open /examples/index.html",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:ui": "vitest --ui",
+    "coverage": "vitest run --coverage"
   },
   "keywords": [
     "dicom",
@@ -37,12 +41,14 @@
   "packageManager": "pnpm@10.23.0",
   "devDependencies": {
     "@types/node": "^25.6.0",
-    "@vitest/ui": "^4.1.4",
+    "@vitest/coverage-v8": "^4.1.10",
+    "@vitest/ui": "^4.1.10",
+    "happy-dom": "^20.11.2",
     "rollup-plugin-dts": "^6.4.1",
     "typescript": "^5.9.3",
     "vite": "^7.3.2",
     "vite-plugin-css-injected-by-js": "^3.5.2",
-    "vitest": "^4.1.4"
+    "vitest": "^4.1.10"
   },
   "dependencies": {
     "@uppy/core": "^5.2.0",

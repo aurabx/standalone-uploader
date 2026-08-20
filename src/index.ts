@@ -264,9 +264,11 @@ export class StandaloneAuraloader {
       throw new Error("Must call init() before mount()");
     }
 
+    /* v8 ignore start -- defensive; init() always creates the renderer before setting `initialized` */
     if (!this.renderer) {
       throw new Error("Renderer not initialized");
     }
+    /* v8 ignore stop */
 
     // Set up render callback to remount Uppy plugins after DOM updates
     this.renderer.onRender((state) => {
@@ -494,6 +496,7 @@ export class StandaloneAuraloader {
       // User dismissed the complete state
       const state = this.store.getState();
       this.config.callbacks?.onUploadComplete?.({
+        /* v8 ignore next -- engine always present when the UI can reach the complete step */
         uploadId: this.engine?.uniqueId || "",
         studies: [],
         successful: state.totalFiles,
@@ -506,6 +509,7 @@ export class StandaloneAuraloader {
    * Build summary from processed files
    */
   private buildSummary(): void {
+    /* v8 ignore next -- defensive; only called from paths where engine exists */
     if (!this.engine) return;
 
     this.store.setSummary({
@@ -645,6 +649,7 @@ export class StandaloneAuraloader {
 }
 
 // Export for UMD bundle
+/* v8 ignore start -- browser-only export path; happy-dom always satisfies the guard so the false branch cannot be hit */
 if (typeof window !== "undefined") {
   const w = window as any;
   w.StandaloneAuraloader = StandaloneAuraloader;
@@ -653,5 +658,6 @@ if (typeof window !== "undefined") {
   w.HmacSigner = HmacSigner;
   w.createSigner = createSigner;
 }
+/* v8 ignore stop */
 
 export default StandaloneAuraloader;

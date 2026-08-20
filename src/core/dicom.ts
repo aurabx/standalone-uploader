@@ -251,7 +251,9 @@ export const dicomGetValue = (
     return dataSet.string(key)?.split('\\') ?? null;
   }
 
+  /* v8 ignore start -- exhaustive; DicomAttributesType has no fourth variant */
   return null;
+  /* v8 ignore stop */
 };
 
 /**

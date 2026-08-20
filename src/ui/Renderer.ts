@@ -509,8 +509,10 @@ export class Renderer {
         return this.renderStartStep(state);
       case 'cancelled':
         return this.renderCancelledStep();
+      /* v8 ignore start -- exhaustive switch; UploaderStep is a closed union */
       default:
         return this.renderStartStep(state);
+      /* v8 ignore stop */
     }
   }
 
