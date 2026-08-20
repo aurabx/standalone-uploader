@@ -7,12 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-08-20
+
 ### Added
 - Determinate progress UI for the file-processing step: phase label, `current / total` counter, progress bar, live tally of accepted / skipped / unreadable files, and an expandable list of the first ten unreadable files with reasons
 - Cancel button during processing that aborts the parsing loop and returns to the drop zone
 - Stall watchdog that surfaces a "Still working — large files can take a while" hint after 20 seconds without progress
 - New `ProcessPhase`, `ProcessOutcome`, and `ProcessProgress` types exported from the public API; new processing fields on `UploaderState`
 - New DOM events on the container element: `sal:cancelProcessing`, `sal:toggleProcessingErrors`
+- Comprehensive test suite with Vitest + happy-dom (186 tests, ~98% line coverage) and `test` / `test:watch` / `coverage` npm scripts
 
 ### Changed
 - `AuraloaderEngine.process()` now accepts an `onProgress` callback, classifies each file (accepted / skipped / rejected / failed), and yields to the browser every 25 files so the UI can repaint and cancel stays responsive
