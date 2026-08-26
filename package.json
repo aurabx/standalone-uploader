@@ -1,6 +1,6 @@
 {
   "name": "@aurabx/standalone-uploader",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Standalone DICOM uploader component for embedding in external applications",
   "type": "module",
   "main": "dist/standalone-auraloader.umd.js",

@@ -294,6 +294,22 @@ uploader.destroy();
 - [README.md](./README.md) - Full API reference and backend endpoint documentation
 - [examples/](./examples/) - Working example applications
 
+## Content Security Policy
+
+If your site sends a `Content-Security-Policy` header, allow the following hosts in `connect-src` so the uploader can reach the Aura API and stream files to the upload endpoint.
+
+### Production
+
+```
+connect-src 'self' https://au.aurabox.app https://lift-prod-au.abxlink.com;
+```
+
+### Development
+
+```
+connect-src 'self' https://aura-dev-nwgosf.laravel.cloud https://lift-dev-au.abxlink.com;
+```
+
 ## Troubleshooting
 
 **"Unauthorized" when getting upload token**
@@ -309,3 +325,6 @@ uploader.destroy();
 **CORS errors**
 - The upload token endpoint should be on your own backend, not a direct call to Aura
 - Ensure your backend is returning proper CORS headers if frontend is on a different origin
+
+**Requests blocked by Content Security Policy**
+- Add the Aura API host and Lift TUS endpoint to `connect-src` — see the Content Security Policy section above for the exact hosts per environment
