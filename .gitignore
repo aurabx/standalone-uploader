@@ -33,3 +33,16 @@ tmp/
 .env
 .env.local
 .env.*.local
+
+# BEGIN Automatic-managed
+# Files generated and managed by Automatic. Regenerated on sync; do not edit inside this block.
+/.agents/
+/.automatic/
+/.claude/
+/.codex/
+/.cursor/
+/.mcp.json
+/AGENTS.md
+/CLAUDE.local.md
+/CLAUDE.md
+# END Automatic-managed

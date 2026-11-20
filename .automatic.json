@@ -1,0 +1,56 @@
+{
+  "agents": [
+    "claude",
+    "cursor",
+    "codex"
+  ],
+  "contexts": [
+    "aurabox"
+  ],
+  "custom_agents": [],
+  "custom_commands": [],
+  "custom_skills": [],
+  "description": "",
+  "file_rules": {
+    "_project": [
+      "automatic-service",
+      "automatic-process",
+      "automatic-code",
+      "automatic-general",
+      "automatic-prose",
+      "local-git-rules",
+      "thinking-effort",
+      "automatic-workflow",
+      "local-rules",
+      "local-long-running-work",
+      "ethics"
+    ]
+  },
+  "id": "c134975c-e842-4ba6-ac6d-a94f3fe5119a",
+  "instruction_mode": "per-agent",
+  "instructions_index_mode": false,
+  "manage_gitignore": true,
+  "mcp_servers": [
+    "github",
+    "aurabox-teams",
+    "spacelift",
+    "better-stack",
+    "sentry-aura",
+    "nightowl",
+    "linear-aurabox",
+    "automatic"
+  ],
+  "name": "standalone-uploader",
+  "profiles": [
+    "General",
+    "Aurabox"
+  ],
+  "providers": [],
+  "skills": [
+    "aurabox-rest-api",
+    "automatic"
+  ],
+  "tools": [
+    "dev-servers"
+  ]
+}
